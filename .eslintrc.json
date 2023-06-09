@@ -4,6 +4,11 @@
         "es2021": true
     },
     "extends": "airbnb-base",
+    "globals": {
+        "GM_getValue": "readonly",
+        "GM_setValue": "readonly",
+        "GM_registerMenuCommand": "readonly"
+    },
     "parserOptions": {
         "ecmaVersion": "latest",
         "sourceType": "module"

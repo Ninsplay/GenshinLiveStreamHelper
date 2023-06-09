@@ -19,7 +19,6 @@
 // @updateURL    https://raw.fastgit.org/Ninsplay/GenshinLiveStreamHelper/main/demo.js
 // @license      GPL-3.0 license
 // ==/UserScript==
-/* global GM_getValue, GM_setValue GM_registerMenuCommand */
 (function main() {
   // 配置初始化
   if (!GM_getValue('gh_reward_progress')) {
@@ -70,7 +69,7 @@
       case '斗鱼':
         return group[2];
       default:
-        return 1000;
+        return '1000';
     }
   }());
 
@@ -98,7 +97,7 @@
     }
   }
 
-  function setInterval() {
+  function setTimeInterval() {
     const temp = prompt('请输入抢码间隔，格式示例：10,1000,100，即代表B站平台间隔为10毫秒 虎牙平台间隔为1000毫秒 斗鱼平台间隔为100毫秒', GM_getValue('gh_interval'));
     if (temp == null) return;
     if (/^(\d+),(\d+),(\d+)$/.test(temp)) {
@@ -127,6 +126,7 @@
     alert('切换成功，即将刷新页面使之生效');
     document.location.reload();
   }
+
   function setGetNewNum() {
     const temp = prompt('请输入萌新任务进度，输入范围1~5', GM_getValue('gh_getNewNum'));
     if (temp == null) return;
@@ -142,7 +142,7 @@
   // 注册菜单
   GM_registerMenuCommand(`设定里程碑进度：${GM_getValue('gh_reward_progress')}（点击修改）`, setRewardProgress);
   GM_registerMenuCommand(`设定抢码时间：${GM_getValue('gh_start_time')}（点击修改）`, setStartTime);
-  GM_registerMenuCommand(`设定抢码间隔：${interval} 毫秒（点击修改）`, setInterval);
+  GM_registerMenuCommand(`设定抢码间隔：${interval} 毫秒（点击修改）`, setTimeInterval);
   GM_registerMenuCommand(`${GM_getValue('gh_autoExpand') ? '✅' : '❌'}自动打开里程碑（点击切换）`, switchAutoExpand);
   GM_registerMenuCommand(`${GM_getValue('gh_pagePurify') ? '✅' : '❌'}页面净化（点击切换）`, switchPagePurify);
   GM_registerMenuCommand(`${GM_getValue('gh_getNew') ? '✅' : '❌'}虎牙/斗鱼抢萌新任务,*抢里程碑时需关闭*（点击切换）`, switchGetNew);
@@ -169,10 +169,10 @@
       switch (platform) {
         case '虎牙':
           document.querySelectorAll('.J_item')[1].click();
-          if (game === '星穹铁道') {
-            document.querySelectorAll('.J_holder')[1].click();
-          }
           setTimeout(() => {
+            if (game === '星穹铁道') {
+              document.querySelectorAll('.J_holder')[1].click();
+            }
             document.querySelectorAll('.J_expBox')[0].scrollIntoView();
           }, 5000);
           break;
@@ -279,6 +279,7 @@
           break;
       }
       setInterval(() => {
+        log(`${selector}`);
         selector.click();
       }, interval);
     }
