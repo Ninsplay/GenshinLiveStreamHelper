@@ -178,12 +178,18 @@
           }, 5000);
           break;
         case '斗鱼': {
+          const selectorId = game === '原神' ? '#bc68' : '#bc58';
           const timer = setInterval(() => {
-            if (document.querySelectorAll('#bc68')[0]) {
+            if (document.querySelectorAll(selectorId)[0]) {
               clearInterval(timer);
-              document.querySelectorAll('#bc68')[0].click();
+              document.querySelectorAll(selectorId)[0].click();
+              let selectorIndex = 0;
+              if (game === '星穹铁道') {
+                document.querySelectorAll('#bc92')[0].click();
+                selectorIndex = GM_getValue('gh_getNew') ? 0 : 1;
+              }
               setTimeout(() => {
-                document.querySelectorAll('.wmTaskV3')[0].scrollIntoView();
+                document.querySelectorAll('.wmTaskV3')[selectorIndex].scrollIntoView();
               }, 5000);
             }
           }, 2000);
