@@ -171,7 +171,8 @@
           document.querySelectorAll('.J_item')[1].click();
           setTimeout(() => {
             if (game === '星穹铁道') {
-              document.querySelectorAll('.J_holder')[1].click();
+              const selectorIndex = GM_getValue('gh_getNew') ? 2 : 1;
+              document.querySelectorAll('.J_holder')[selectorIndex].click();
             }
             document.querySelectorAll('.J_expBox')[0].scrollIntoView();
           }, 5000);
