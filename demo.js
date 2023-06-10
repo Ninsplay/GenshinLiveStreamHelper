@@ -291,6 +291,14 @@
         default:
           break;
       }
+      if (platform === '虎牙' && getNew) {
+        const timer = setInterval(() => {
+          document.querySelectorAll('.J_comp_23 .reload-item')[0].click();
+          if (selector.innerText !== '未完成') {
+            clearInterval(timer);
+          }
+        }, interval);
+      }
       setInterval(() => {
         selector.click();
       }, interval);
