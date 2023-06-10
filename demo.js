@@ -46,7 +46,7 @@
   // 变量初始化
   const platform = (function getPlatform() {
     if (document.location.href.includes('bilibili')) return 'B站';
-    if (document.title.includes('原神') || document.title.includes('星穹铁道')) {
+    if (/(原神|星穹铁道)/.test(document.title)) {
       if (document.location.href.includes('huya')) return '虎牙';
       if (document.location.href.includes('douyu')) return '斗鱼';
     }
@@ -128,7 +128,7 @@
   }
 
   function setGetNewNum() {
-    const temp = prompt('请输入萌新任务进度，输入范围1~5', GM_getValue('gh_getNewNum'));
+    const temp = prompt('请输入萌新任务进度，*以网页实际布局为准*，输入范围1~5', GM_getValue('gh_getNewNum'));
     if (temp == null) return;
     if (parseInt(temp, 10) > 0 || parseInt(temp, 10) < 6) {
       GM_setValue('gh_getNewNum', temp);
@@ -165,6 +165,11 @@
 
   // 运行净化进程
   function runPurifyProcess() {
+    if (!platform || !game) {
+      alert('未检测到平台或游戏，无法执行脚本');
+      return;
+    }
+
     if (GM_getValue('gh_autoExpand')) {
       switch (platform) {
         case '虎牙':
@@ -236,8 +241,9 @@
     const startSec = parseInt(startTime[2], 10);
     const getNew = GM_getValue('gh_getNew');
     const getNewNum = GM_getValue('gh_getNewNum');
+    const rewardType = getNew ? '萌新任务' : '里程碑';
 
-    log(`助手计划于${startHour}点${startMin}分${startSec}秒开始领取第${level}档的里程碑奖励（如有误请自行通过菜单修改配置）`);
+    log(`助手计划于${startHour}点${startMin}分${startSec}秒开始领取${platform}的第${level}个${rewardType}奖励（如有误请自行通过菜单修改配置）`);
 
     // 抢码实现
     function rob() {
@@ -286,7 +292,6 @@
           break;
       }
       setInterval(() => {
-        log(`${selector}`);
         selector.click();
       }, interval);
     }
