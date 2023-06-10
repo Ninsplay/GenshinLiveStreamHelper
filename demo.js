@@ -165,7 +165,7 @@
 
   // 运行净化进程
   function runPurifyProcess() {
-    if (!platform || !game) {
+    if ((platform !== 'B站') && (!platform || !game)) {
       alert('未检测到平台或游戏，无法执行脚本');
       return;
     }
