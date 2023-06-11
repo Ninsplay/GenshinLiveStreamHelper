@@ -268,13 +268,21 @@
           [selector] = document.querySelectorAll('.exchange-button');
           break;
         case '虎牙':
+        {
           if (!getNew) {
             selector = document.querySelectorAll('.exp-award li button')[level - 1];
             break;
           }
           // 很蠢，但能用
           selector = getElementByXpath(`//*[@id="matchComponent23"]/div/div/div[1]/div[2]/div[2]/div/div/div[${GM_getValue('gh_getNewNum')}]/div/div[3]`);
+          const timer = setInterval(() => {
+            document.querySelectorAll('.J_comp_23 .reload-item')[0].click();
+            if (selector.innerText !== '未完成') {
+              clearInterval(timer);
+            }
+          }, interval);
           break;
+        }
         case '斗鱼':
         {
           let selectorIndex;
@@ -290,14 +298,6 @@
         }
         default:
           break;
-      }
-      if (platform === '虎牙' && getNew) {
-        const timer = setInterval(() => {
-          document.querySelectorAll('.J_comp_23 .reload-item')[0].click();
-          if (selector.innerText !== '未完成') {
-            clearInterval(timer);
-          }
-        }, interval);
       }
       setInterval(() => {
         selector.click();
