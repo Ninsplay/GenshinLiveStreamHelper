@@ -248,20 +248,6 @@
     // 抢码实现
     function rob() {
       log('助手开始领取，如若出现数据异常为正常情况');
-      if (platform === '虎牙' && !getNew) {
-        const timer = setInterval(() => {
-          document.querySelectorAll('div[title="10经验值"]+button')[0].click();
-          document.querySelectorAll('.exp-award .reload')[0].click();
-          if (document.querySelectorAll('div[title="10经验值"]+button')[0].innerText === '已领取') {
-            clearInterval(timer);
-            setTimeout(() => {
-              Array.from(document.querySelectorAll('.J_dcpConfirm')).forEach((e) => {
-                e.click();
-              });
-            }, 1000);
-          }
-        }, interval);
-      }
       let selector;
       switch (platform) {
         case 'B站':
@@ -271,6 +257,18 @@
         {
           if (!getNew) {
             selector = document.querySelectorAll('.exp-award li button')[level - 1];
+            const timer = setInterval(() => {
+              document.querySelectorAll('div[title="10经验值"]+button')[0].click();
+              document.querySelectorAll('.exp-award .reload')[0].click();
+              if (document.querySelectorAll('div[title="10经验值"]+button')[0].innerText === '已领取') {
+                clearInterval(timer);
+                setTimeout(() => {
+                  Array.from(document.querySelectorAll('.J_dcpConfirm')).forEach((e) => {
+                    e.click();
+                  });
+                }, 1000);
+              }
+            }, interval);
             break;
           }
           // 很蠢，但能用
@@ -279,6 +277,7 @@
             document.querySelectorAll('.J_comp_23 .reload-item')[0].click();
             if (selector.innerText !== '未完成') {
               clearInterval(timer);
+              document.querySelectorAll('.diy-popup--btn')[0].click();
             }
           }, interval);
           break;
@@ -300,6 +299,9 @@
           break;
       }
       setInterval(() => {
+        if (platform === '虎牙') { // 虎牙重新选取下避免出问题
+          selector = document.querySelectorAll('.exp-award li button')[level - 1];
+        }
         selector.click();
       }, interval);
     }
