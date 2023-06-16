@@ -298,12 +298,17 @@
         default:
           break;
       }
-      setInterval(() => {
-        if (platform === '虎牙') { // 虎牙重新选取下避免出问题
+      if (platform === '虎牙' && !getNew) {
+        setInterval(() => {
+          // 虎牙重新选取下避免出问题
           selector = document.querySelectorAll('.exp-award li button')[level - 1];
-        }
-        selector.click();
-      }, interval);
+          selector.click();
+        }, interval);
+      } else {
+        setInterval(() => {
+          selector.click();
+        }, interval);
+      }
     }
     // 等待开抢
     const timer = setInterval(() => {
