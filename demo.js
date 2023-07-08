@@ -173,7 +173,11 @@
     if (GM_getValue('gh_autoExpand')) {
       switch (platform) {
         case '虎牙':
-          document.querySelectorAll('.J_item')[1].click();
+          if (game === '原神') {
+            document.querySelectorAll('.J_item')[2].click();
+          } else {
+            document.querySelectorAll('.J_item')[1].click();
+          }
           setTimeout(() => {
             if (game === '星穹铁道') {
               const selectorIndex = GM_getValue('gh_getNew') ? 2 : 1;
@@ -188,7 +192,7 @@
             if (document.querySelectorAll(selectorId)[0]) {
               clearInterval(timer);
               document.querySelectorAll(selectorId)[0].click();
-              let selectorIndex = 0;
+              let selectorIndex = 1;
               if (game === '星穹铁道') {
                 document.querySelectorAll('#bc92')[0].click();
                 selectorIndex = GM_getValue('gh_getNew') ? 0 : 1;
@@ -289,8 +293,8 @@
             selectorIndex = getNewNum - 1;
           } else if (game === '星穹铁道') {
             selectorIndex = level + 4;
-          } else {
-            selectorIndex = level - 1;
+          } else if (game === '原神') {
+            selectorIndex = level;
           }
           selector = document.querySelectorAll('.wmTaskV3GiftBtn-btn')[selectorIndex];
           break;
