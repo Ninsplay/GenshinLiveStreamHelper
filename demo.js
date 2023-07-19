@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      3.6.2
+// @version      3.6.3
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由Ninsplay修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -184,18 +184,18 @@
               const selectorIndex = GM_getValue('gh_getNew') ? 2 : 1;
               document.querySelectorAll('.J_holder')[selectorIndex].click();
             }
-            document.querySelectorAll('.J_expBox')[0].scrollIntoView();
+            document.querySelector('.J_expBox').scrollIntoView();
           }, 5000);
           break;
         case '斗鱼': {
           const selectorId = game === '原神' ? '#bc68' : '#bc58';
           const timer = setInterval(() => {
-            if (document.querySelectorAll(selectorId)[0]) {
+            if (document.querySelector(selectorId)) {
               clearInterval(timer);
-              document.querySelectorAll(selectorId)[0].click();
+              document.querySelector(selectorId).click();
               let selectorIndex = 1;
               if (game === '星穹铁道') {
-                document.querySelectorAll('#bc92')[0].click();
+                document.querySelector('#bc92').click();
                 selectorIndex = GM_getValue('gh_getNew') ? 0 : 1;
               }
               setTimeout(() => {
@@ -212,9 +212,9 @@
     if (GM_getValue('gh_pagePurify')) {
       if (platform === '斗鱼') {
         const timer = setInterval(() => {
-          if (document.querySelectorAll('div[title="暂停"]')[0]) {
+          if (document.querySelector('div[title="暂停"]')) {
             clearInterval(timer);
-            document.querySelectorAll('div[title="暂停"]')[0].click();
+            document.querySelector('div[title="暂停"]').click();
             clearElement(document.querySelectorAll('.wm-general')[1]);
           }
         }, 2000);
@@ -256,16 +256,16 @@
       let selector;
       switch (platform) {
         case 'B站':
-          [selector] = document.querySelectorAll('.exchange-button');
+          selector = document.querySelector('.exchange-button');
           break;
         case '虎牙':
         {
           if (!getNew) {
             selector = document.querySelectorAll('.exp-award li button')[level - 1];
             const timer = setInterval(() => {
-              document.querySelectorAll('div[title="10经验值"]+button')[0].click();
-              document.querySelectorAll('.exp-award .reload')[0].click();
-              if (document.querySelectorAll('div[title="10经验值"]+button')[0].innerText === '已领取') {
+              document.querySelector('div[title="10经验值"]+button').click();
+              document.querySelector('.exp-award .reload').click();
+              if (document.querySelector('div[title="10经验值"]+button').innerText === '已领取') {
                 clearInterval(timer);
                 setTimeout(() => {
                   Array.from(document.querySelectorAll('.J_dcpConfirm')).forEach((e) => {
@@ -277,12 +277,13 @@
             break;
           }
           // 很蠢，但能用
-          selector = getElementByXpath(`//*[@id="matchComponent23"]/div/div/div[1]/div[2]/div[2]/div/div/div[${GM_getValue('gh_getNewNum')}]/div/div[3]`);
+          // selector = getElementByXpath(`//*[@id="matchComponent21"]/div/div/div[1]/div[2]/div[2]/div/div/div[${GM_getValue('gh_getNewNum')}]/div/div[3]`);
+          selector = document.querySelectorAll('.J_comp_21 .swiper-slide > div> div:nth-child(3)')[GM_getValue('gh_getNewNum') - 1];
           const timer = setInterval(() => {
-            document.querySelectorAll('.J_comp_23 .reload-item')[0].click();
+            document.querySelector('.J_comp_21 .reload-item').click();
             if (selector.innerText !== '未完成') {
               clearInterval(timer);
-              document.querySelectorAll('.diy-popup--btn')[0].click();
+              document.querySelector('.diy-popup--btn').click();
             }
           }, interval);
           break;
