@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      3.6.3
+// @version      3.6.4
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由Ninsplay修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -176,7 +176,7 @@
         case '虎牙':
           if (game === '原神') {
             document.querySelectorAll('.J_item')[2].click();
-          } else {
+          } else if (game === '星穹铁道') {
             document.querySelectorAll('.J_item')[1].click();
           }
           setTimeout(() => {
@@ -188,7 +188,7 @@
           }, 5000);
           break;
         case '斗鱼': {
-          const selectorId = game === '原神' ? '#bc68' : '#bc58';
+          const selectorId = game === '原神' ? '#bc34' : '#bc58';
           const timer = setInterval(() => {
             if (document.querySelector(selectorId)) {
               clearInterval(timer);
@@ -296,7 +296,7 @@
           } else if (game === '星穹铁道') {
             selectorIndex = level + 4;
           } else if (game === '原神') {
-            selectorIndex = level;
+            selectorIndex = level - 1;
           }
           selector = document.querySelectorAll('.wmTaskV3GiftBtn-btn')[selectorIndex];
           break;
