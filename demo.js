@@ -15,8 +15,8 @@
 // @grant        GM_getValue
 // @homepageURL  https://github.com/Ninsplay/GenshinLiveStreamHelper
 // @supportURL   https://github.com/Ninsplay/GenshinLiveStreamHelper/issues
-// @downloadURL  https://raw.fastgit.org/Ninsplay/GenshinLiveStreamHelper/main/demo.js
-// @updateURL    https://raw.fastgit.org/Ninsplay/GenshinLiveStreamHelper/main/demo.js
+// @downloadURL  https://ghproxy.com/https://raw.githubusercontent.com/Ninsplay/GenshinLiveStreamHelper/main/demo.js
+// @updateURL    https://ghproxy.com/https://raw.githubusercontent.com/Ninsplay/GenshinLiveStreamHelper/main/demo.js
 // @license      GPL-3.0 license
 // ==/UserScript==
 (function main() {
