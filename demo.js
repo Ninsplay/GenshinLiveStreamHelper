@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      3.6.6
+// @version      3.6.7
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由Ninsplay修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -151,13 +151,30 @@
   GM_registerMenuCommand(`虎牙/斗鱼抢第几个萌新任务：${GM_getValue('gh_getNewNum')}（点击修改）`, setGetNewNum);
 
   // 用于xpath获取元素
-  function getElementByXpath(path) {
-    return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-  }
+  // function getElementByXpath(path) {
+  //   return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+  // }
 
   // 移除元素
   function clearElement(el) {
     el.parentNode.removeChild(el);
+  }
+
+  // 获取ck，主要是b站csrf
+  function getCookie(cname) {
+    const name = `${cname}=`;
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const ca = decodedCookie.split(';');
+    for (let i = 0; i < ca.length; i += 1) {
+      let c = ca[i];
+      while (c.charAt(0) === ' ') {
+        c = c.substring(1);
+      }
+      if (c.indexOf(name) === 0) {
+        return c.substring(name.length, c.length);
+      }
+    }
+    return '';
   }
 
   // 日志
@@ -304,6 +321,26 @@
         }
         default:
           break;
+      }
+      if (platform === 'B站') {
+        const csrfToken = getCookie('bili_jct');
+        const taskId = window.location.href.split('=')[1];
+        const url = `https://api.bilibili.com/x/activity/mission/single_task?csrf=${csrfToken}&id=${taskId}`;
+        let revieveId = 0;
+        const timer = setInterval(() => {
+          fetch(url, {
+            credentials: 'include',
+            headers: {
+              Accept: 'application/json, text/plain, */*',
+            },
+          })
+            .then((response) => {
+              response.json().then((data) => {
+                if (data.code === 0) revieveId = data.data.task_info.receive_id;
+              });
+            });
+          if (revieveId !== 0) clearInterval(timer);
+        }, 1000);
       }
       if (platform === '虎牙' && !getNew) {
         setInterval(() => {
