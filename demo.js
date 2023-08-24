@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      3.6.7
+// @version      3.6.8
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由Ninsplay修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -323,12 +323,23 @@
           break;
       }
       if (platform === 'B站') {
+        // 获取receive_id
         const csrfToken = getCookie('bili_jct');
-        const taskId = window.location.href.split('=')[1];
-        const url = `https://api.bilibili.com/x/activity/mission/single_task?csrf=${csrfToken}&id=${taskId}`;
+        const taskId1 = window.location.href.split('=')[1];
+        const params = new URLSearchParams({
+          csrf: csrfToken,
+          id: taskId1,
+        });
+        const url1 = `https://api.bilibili.com/x/activity/mission/single_task?${params}`;
+        let actId;
+        let taskId;
+        let groupId;
         let revieveId = 0;
-        const timer = setInterval(() => {
-          fetch(url, {
+        let actName;
+        let taskName;
+        let rewardName;
+        const timer1 = setInterval(() => {
+          fetch(url1, {
             credentials: 'include',
             headers: {
               Accept: 'application/json, text/plain, */*',
@@ -336,13 +347,63 @@
           })
             .then((response) => {
               response.json().then((data) => {
-                if (data.code === 0) revieveId = data.data.task_info.receive_id;
+                if (data.code === 0) {
+                  const taskInfo = data.data.task_info;
+                  const groupList = taskInfo.group_list[0];
+                  actId = groupList.act_id;
+                  taskId = groupList.task_id;
+                  groupId = groupList.group_id;
+                  revieveId = taskInfo.receive_id;
+                  actName = data.data.act_info.act_name;
+                  taskName = taskInfo.task_name;
+                  rewardName = taskInfo.reward_info.reward_name;
+                  clearInterval(timer1);
+                }
               });
             });
-          if (revieveId !== 0) clearInterval(timer);
         }, 1000);
-      }
-      if (platform === '虎牙' && !getNew) {
+        // 开始抢
+        const url2 = 'https://api.bilibili.com/x/activity/mission/task/reward/receive';
+        const formData = new FormData();
+        const timer2 = setInterval(() => {
+          if (revieveId !== 0) {
+            if (!formData.has('csrf')) {
+              formData.set('csrf', csrfToken);
+              formData.set('act_id', actId);
+              formData.set('task_id', taskId);
+              formData.set('group_id', groupId);
+              formData.set('receive_id', revieveId);
+              formData.set('receive_from', 'missionPage');
+              formData.set('act_name', actName);
+              formData.set('task_name', taskName);
+              formData.set('reward_name', rewardName);
+            }
+            fetch(url2, {
+              credentials: 'include',
+              method: 'POST',
+              headers: {
+                Accept: 'application/json, text/plain, */*',
+              },
+              body: formData,
+            })
+              .then((response) => {
+                response.json().then((data) => {
+                  if (data.code === 0) {
+                    const code = data.data.extra.cdket_content;
+                    alert(`领取成功！兑换码为${code}`);
+                    clearInterval(timer2);
+                  } else if (data.code === 75154) {
+                    alert('来晚了，奖品已被领完~');
+                    clearInterval(timer2);
+                  } else if (data.code === 75086) {
+                    alert('任务奖励已领取');
+                    clearInterval(timer2);
+                  }
+                });
+              });
+          }
+        }, interval);
+      } else if (platform === '虎牙' && !getNew) {
         setInterval(() => {
           // 虎牙重新选取下避免出问题
           selector = document.querySelectorAll('.exp-award li button')[level - 1];
