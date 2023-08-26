@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      3.7.0
+// @version      4.0.0+1.2.0
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由Ninsplay修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
