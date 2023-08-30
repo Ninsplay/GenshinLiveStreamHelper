@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      4.0.0+1.2.0
+// @version      4.0.0+1.3.0
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由Ninsplay修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -296,9 +296,9 @@
           }
           // 很蠢，但能用
           // selector = getElementByXpath(`//*[@id="matchComponent21"]/div/div/div[1]/div[2]/div[2]/div/div/div[${GM_getValue('gh_getNewNum')}]/div/div[3]`);
-          selector = document.querySelectorAll('.J_comp_21 .swiper-slide > div> div:nth-child(3)')[GM_getValue('gh_getNewNum') - 1];
+          selector = document.querySelectorAll('.J_comp_27 .swiper-slide > div> div:nth-child(3)')[GM_getValue('gh_getNewNum') - 1];
           const timer = setInterval(() => {
-            document.querySelector('.J_comp_21 .reload-item').click();
+            document.querySelector('.J_comp_27 .reload-item').click();
             if (selector.innerText !== '未完成') {
               clearInterval(timer);
               document.querySelector('.diy-popup--btn').click();
@@ -346,20 +346,22 @@
             },
           })
             .then((response) => {
-              response.json().then((data) => {
-                if (data.code === 0) {
-                  const taskInfo = data.data.task_info;
-                  const groupList = taskInfo.group_list[0];
-                  actId = groupList.act_id;
-                  taskId = groupList.task_id;
-                  groupId = groupList.group_id;
-                  revieveId = taskInfo.receive_id;
-                  actName = data.data.act_info.act_name;
-                  taskName = taskInfo.task_name;
-                  rewardName = taskInfo.reward_info.reward_name;
-                  clearInterval(timer1);
-                }
-              });
+              if (response.status === 200) {
+                response.json().then((data) => {
+                  if (data.code === 0 && data.data.task_info.receive_id !== 0) {
+                    const taskInfo = data.data.task_info;
+                    const groupList = taskInfo.group_list[0];
+                    actId = groupList.act_id;
+                    taskId = groupList.task_id;
+                    groupId = groupList.group_id;
+                    revieveId = taskInfo.receive_id;
+                    actName = data.data.act_info.act_name;
+                    taskName = taskInfo.task_name;
+                    rewardName = taskInfo.reward_info.reward_name;
+                    clearInterval(timer1);
+                  }
+                });
+              }
             });
         }, 1000);
         // 开始抢
@@ -387,19 +389,21 @@
               body: formData,
             })
               .then((response) => {
-                response.json().then((data) => {
-                  if (data.code === 0) {
-                    const code = data.data.extra.cdkey_content;
-                    alert(`领取成功！兑换码为${code}`);
-                    clearInterval(timer2);
-                  } else if (data.code === 75154) {
-                    alert('来晚了，奖品已被领完~');
-                    clearInterval(timer2);
-                  } else if (data.code === 75086) {
-                    alert('任务奖励已领取');
-                    clearInterval(timer2);
-                  }
-                });
+                if (response.status === 200) {
+                  response.json().then((data) => {
+                    if (data.code === 0) {
+                      const code = data.data.extra.cdkey_content;
+                      alert(`领取成功！兑换码为${code}`);
+                      clearInterval(timer2);
+                    } else if (data.code === 75154) {
+                      alert('来晚了，奖品已被领完~');
+                      clearInterval(timer2);
+                    } else if (data.code === 75086) {
+                      alert('任务奖励已领取');
+                      clearInterval(timer2);
+                    }
+                  });
+                }
               });
           }
         }, interval);
