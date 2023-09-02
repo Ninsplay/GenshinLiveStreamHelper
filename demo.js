@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      4.0.0+1.3.0
+// @version      4.0.1+1.3.1
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由Ninsplay修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -123,6 +123,12 @@
     document.location.reload();
   }
 
+  function switchBiliExtraInfo() {
+    GM_setValue('gh_extraInfo', !GM_getValue('gh_extraInfo'));
+    alert('切换成功，即将刷新页面使之生效');
+    document.location.reload();
+  }
+
   function switchGetNew() {
     GM_setValue('gh_getNew', !GM_getValue('gh_getNew'));
     alert('切换成功，即将刷新页面使之生效');
@@ -147,13 +153,9 @@
   GM_registerMenuCommand(`设定抢码间隔：${interval} 毫秒（点击修改）`, setTimeInterval);
   GM_registerMenuCommand(`${GM_getValue('gh_autoExpand') ? '✅' : '❌'}自动打开里程碑（点击切换）`, switchAutoExpand);
   GM_registerMenuCommand(`${GM_getValue('gh_pagePurify') ? '✅' : '❌'}页面净化（点击切换）`, switchPagePurify);
+  GM_registerMenuCommand(`${GM_getValue('gh_extraInfo') ? '✅' : '❌'}是否启用b站额外信息和主动开始按钮`, switchBiliExtraInfo);
   GM_registerMenuCommand(`${GM_getValue('gh_getNew') ? '✅' : '❌'}虎牙/斗鱼抢萌新任务,*抢里程碑时需关闭*（点击切换）`, switchGetNew);
   GM_registerMenuCommand(`虎牙/斗鱼抢第几个萌新任务：${GM_getValue('gh_getNewNum')}（点击修改）`, setGetNewNum);
-
-  // 用于xpath获取元素
-  // function getElementByXpath(path) {
-  //   return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-  // }
 
   // 移除元素
   function clearElement(el) {
@@ -182,9 +184,36 @@
     console.info(`【原神直播活动抢码助手】${msg}`);
   }
 
-  // 运行净化进程
+  // 给b站网页添加一个显示进度的element
+  function addBiliInfoPanel() {
+    const noticeWarp = document.querySelector('.tool-wrap');
+    const infoPanel = document.createElement('div');
+    infoPanel.innerHTML = `<div style="width: 649px; height: 100px; background-color: #e3e5e7; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+    <div style="font-size: 16px; margin-bottom: 10px;">抢码开始时间：${GM_getValue('gh_start_time')}</div>
+    <div style="font-size: 16px; margin-bottom: 10px;">抢码间隔：${interval} 毫秒</div>
+    <div class="bili-status" style="font-size: 16px; margin-bottom: 10px;">当前状态：等待开始</div>`;
+    noticeWarp.appendChild(infoPanel);
+  }
+
+  function modifyBiliInfoPanel(status) {
+    const infoPanel = document.querySelector('.bili-status');
+    infoPanel.innerText = `当前状态：${status}`;
+  }
+
+  let manualStart = false;
+
+  function addManualStartButton() {
+    const noticeWarp = document.querySelector('.tool-wrap');
+    const manualStartButton = document.createElement('button');
+    manualStartButton.innerText = '手动开抢';
+    manualStartButton.className = 'button exchange-button'; // 直接用叔叔的样式
+    manualStartButton.onclick = () => { manualStart = true; };
+    noticeWarp.appendChild(manualStartButton);
+  }
+
+  // 斗鱼和虎牙运行净化和自动打开里程碑，b站添加额外信息和手动开始按钮
   function runPurifyProcess() {
-    if ((platform !== 'B站') && (!platform || !game)) {
+    if (platform !== 'B站' && (!platform || !game)) {
       alert('未检测到平台或游戏，无法执行脚本');
       return;
     }
@@ -238,6 +267,10 @@
         }, 2000);
       }
     }
+    if (platform === 'B站' && GM_getValue('gh_extraInfo')) {
+      addBiliInfoPanel();
+      addManualStartButton();
+    }
   }
 
   // 运行抢码进程
@@ -281,9 +314,9 @@
           if (!getNew) {
             selector = document.querySelectorAll('.exp-award li button')[level - 1];
             const timer = setInterval(() => {
-              document.querySelector('div[title="10经验值"]+button').click();
+              document.querySelector('li:last-child .task-exp+button').click();
               document.querySelector('.exp-award .reload').click();
-              if (document.querySelector('div[title="10经验值"]+button').innerText === '已领取') {
+              if (document.querySelector('li:last-child .task-exp+button').innerText === '已领取') {
                 clearInterval(timer);
                 setTimeout(() => {
                   Array.from(document.querySelectorAll('.J_dcpConfirm')).forEach((e) => {
@@ -294,8 +327,6 @@
             }, interval);
             break;
           }
-          // 很蠢，但能用
-          // selector = getElementByXpath(`//*[@id="matchComponent21"]/div/div/div[1]/div[2]/div[2]/div/div/div[${GM_getValue('gh_getNewNum')}]/div/div[3]`);
           selector = document.querySelectorAll('.J_comp_27 .swiper-slide > div> div:nth-child(3)')[GM_getValue('gh_getNewNum') - 1];
           const timer = setInterval(() => {
             document.querySelector('.J_comp_27 .reload-item').click();
@@ -330,7 +361,7 @@
           csrf: csrfToken,
           id: taskId1,
         });
-        const url1 = `https://api.bilibili.com/x/activity/mission/single_task?${params}`;
+        const receiveIdUrl = `https://api.bilibili.com/x/activity/mission/single_task?${params}`;
         let actId;
         let taskId;
         let groupId;
@@ -338,8 +369,9 @@
         let actName;
         let taskName;
         let rewardName;
-        const timer1 = setInterval(() => {
-          fetch(url1, {
+        const receiveIdTimer = setInterval(() => {
+          modifyBiliInfoPanel('正在获取receive_id');
+          fetch(receiveIdUrl, {
             credentials: 'include',
             headers: {
               Accept: 'application/json, text/plain, */*',
@@ -349,6 +381,7 @@
               if (response.status === 200) {
                 response.json().then((data) => {
                   if (data.code === 0 && data.data.task_info.receive_id !== 0) {
+                    clearInterval(receiveIdTimer);
                     const taskInfo = data.data.task_info;
                     const groupList = taskInfo.group_list[0];
                     actId = groupList.act_id;
@@ -358,16 +391,19 @@
                     actName = data.data.act_info.act_name;
                     taskName = taskInfo.task_name;
                     rewardName = taskInfo.reward_info.reward_name;
-                    clearInterval(timer1);
+                    modifyBiliInfoPanel('receive_id获取成功');
+                  } else {
+                    modifyBiliInfoPanel('任务还未完成，等待重试');
                   }
                 });
               }
             });
         }, 1000);
         // 开始抢
-        const url2 = 'https://api.bilibili.com/x/activity/mission/task/reward/receive';
+        const receiveUrl = 'https://api.bilibili.com/x/activity/mission/task/reward/receive';
         const formData = new FormData();
-        const timer2 = setInterval(() => {
+        let counter = 0;
+        const receiveTimer = setInterval(() => {
           if (revieveId !== 0) {
             if (!formData.has('csrf')) {
               formData.set('csrf', csrfToken);
@@ -380,7 +416,7 @@
               formData.set('task_name', taskName);
               formData.set('reward_name', rewardName);
             }
-            fetch(url2, {
+            fetch(receiveUrl, {
               credentials: 'include',
               method: 'POST',
               headers: {
@@ -392,15 +428,18 @@
                 if (response.status === 200) {
                   response.json().then((data) => {
                     if (data.code === 0) {
+                      clearInterval(receiveTimer);
                       const code = data.data.extra.cdkey_content;
                       alert(`领取成功！兑换码为${code}`);
-                      clearInterval(timer2);
                     } else if (data.code === 75154) {
+                      clearInterval(receiveTimer);
                       alert('来晚了，奖品已被领完~');
-                      clearInterval(timer2);
                     } else if (data.code === 75086) {
+                      clearInterval(receiveTimer);
                       alert('任务奖励已领取');
-                      clearInterval(timer2);
+                    } else {
+                      counter += 1;
+                      modifyBiliInfoPanel(`领取失败${data.code}，已重试${counter}次`);
                     }
                   });
                 }
@@ -422,7 +461,7 @@
     // 等待开抢
     const timer = setInterval(() => {
       const date = new Date();
-      if (date.getHours() === startHour && date.getMinutes() === startMin && date.getSeconds() >= startSec) {
+      if (manualStart || (date.getHours() === startHour && date.getMinutes() === startMin && date.getSeconds() >= startSec)) {
         clearInterval(timer);
         rob();
       }
