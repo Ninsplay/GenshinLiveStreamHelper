@@ -188,10 +188,12 @@
   function addBiliInfoPanel() {
     const noticeWarp = document.querySelector('.tool-wrap');
     const infoPanel = document.createElement('div');
-    infoPanel.innerHTML = `<div style="width: 649px; height: 100px; background-color: #e3e5e7; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-    <div style="font-size: 16px; margin-bottom: 10px;">抢码开始时间：${GM_getValue('gh_start_time')}</div>
-    <div style="font-size: 16px; margin-bottom: 10px;">抢码间隔：${interval} 毫秒</div>
-    <div class="bili-status" style="font-size: 16px; margin-bottom: 10px;">当前状态：等待开始</div>`;
+    infoPanel.className = 'task-progress-tip';
+    infoPanel.innerHTML = (
+      `<div style="margin-bottom: 10px;">抢码开始时间：${GM_getValue('gh_start_time')}</div>
+      <div style="margin-bottom: 10px;">抢码间隔：${interval} 毫秒</div>
+      <div class="bili-status" style="margin-bottom: 10px;">当前状态：等待开始</div>`
+    );
     noticeWarp.appendChild(infoPanel);
   }
 
