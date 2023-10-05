@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      4.1.1+1.3.2
+// @version      4.1.2+1.3.2
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由Ninsplay修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -430,8 +430,9 @@
                   response.json().then((data) => {
                     if (data.code === 0) {
                       clearInterval(receiveTimer);
-                      const code = data.data.extra.cdkey_content;
-                      alert(`领取成功！兑换码为${code}`);
+                      let msg = '领取成功！';
+                      if (game !== '原神') msg += `兑换码为${data.data.extra.cdkey_content}`;
+                      alert(msg);
                     } else if (data.code === 75154) {
                       clearInterval(receiveTimer);
                       alert('来晚了，奖品已被领完~，明日再战');
