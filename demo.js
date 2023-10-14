@@ -429,27 +429,40 @@
               .then((response) => {
                 if (response.status === 200) {
                   response.json().then((data) => {
-                    if (data.code === 0) {
-                      clearInterval(receiveTimer);
-                      let msg = '领取成功！';
-                      try {
-                        msg += `兑换码为${data.data.extra.cdkey_content}`;
-                      } catch (e) {
-                        // 原神没有兑换码
-                      }
-                      alert(msg);
-                    } else if (data.code === 75154) {
-                      clearInterval(receiveTimer);
-                      alert('来晚了，奖品已被领完~，明日再战');
-                    } else if (data.code === 75255) {
-                      clearInterval(receiveTimer);
-                      alert('库存已使用完，寄');
-                    } else if (data.code === 75086) {
-                      clearInterval(receiveTimer);
-                      alert('任务奖励已领取');
-                    } else {
-                      counter += 1;
-                      modifyBiliInfoPanel(`领取失败${data.code}，已重试${counter}次`);
+                    let msg = '领取成功！';
+                    switch (data.code) {
+                      case 0:
+                        clearInterval(receiveTimer);
+                        try {
+                          msg += `兑换码为${data.data.extra.cdkey_content}`;
+                        } catch (e) {
+                          // 原神没有兑换码
+                        }
+                        alert(msg);
+                        break;
+                      // 感觉没必要先注释掉了
+                      // case 75153:
+                      //   // 星铁改成后续也只能半夜两点开始领了，这时候有receive_id然后跳这个
+                      //   clearInterval(receiveTimer);
+                      //   alert('不在奖品领取时间内，无法领取奖品~，是不是时间设置错了');
+                      //   break;
+                      case 75154:
+                        clearInterval(receiveTimer);
+                        alert('来晚了，奖品已被领完~，明日再战');
+                        break;
+                      case 75255:
+                        clearInterval(receiveTimer);
+                        alert('库存已使用完，寄');
+                        break;
+                      case 75086:
+                        clearInterval(receiveTimer);
+                        alert('任务奖励已领取');
+                        break;
+                      default:
+                        // -702 -705 请求频率过高，请稍候重试
+                        counter += 1;
+                        modifyBiliInfoPanel(`领取失败${data.code}，已重试${counter}次`);
+                        break;
                     }
                   });
                 }
