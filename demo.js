@@ -30,7 +30,7 @@
     GM_setValue('gh_start_time', '01:59:59');
   }
   if (!GM_getValue('gh_interval')) {
-    GM_setValue('gh_interval', '10,1000,100');
+    GM_setValue('gh_interval', '1000,1000,100');
   }
   if (!GM_getValue('gh_autoExpand')) {
     GM_setValue('gh_autoExpand', false);
@@ -101,7 +101,7 @@
   }
 
   function setTimeInterval() {
-    const temp = prompt('请输入抢码间隔，格式示例：10,1000,100，即代表B站平台间隔为10毫秒 虎牙平台间隔为1000毫秒 斗鱼平台间隔为100毫秒', GM_getValue('gh_interval'));
+    const temp = prompt('请输入抢码间隔，格式示例：1000,1000,100，即代表B站平台间隔为1000毫秒 虎牙平台间隔为1000毫秒 斗鱼平台间隔为100毫秒', GM_getValue('gh_interval'));
     if (temp == null) return;
     if (/^(\d+),(\d+),(\d+)$/.test(temp)) {
       GM_setValue('gh_interval', temp);
@@ -316,6 +316,7 @@
           if (!getNew) {
             selector = document.querySelectorAll('.exp-award li button')[level - 1];
             const timer = setInterval(() => {
+              // 铁道好像是first-child
               document.querySelector('li:last-child .task-exp+button').click();
               document.querySelector('.exp-award .reload').click();
               if (document.querySelector('li:last-child .task-exp+button').innerText === '已领取') {
