@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      4.1.3+1.4.0
+// @version      4.1.4+1.4.1
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由Ninsplay修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -37,6 +37,12 @@
   }
   if (!GM_getValue('gh_pagePurify')) {
     GM_setValue('gh_pagePurify', false);
+  }
+  if (!GM_getValue('gh_biliExtraInfo')) {
+    GM_setValue('gh_biliExtraInfo', false);
+  }
+  if (!GM_getValue('gh_biliUseApi')) {
+    GM_setValue('gh_biliUseApi', false);
   }
   if (!GM_getValue('gh_getNew')) {
     GM_setValue('gh_getNew', false);
@@ -125,7 +131,13 @@
   }
 
   function switchBiliExtraInfo() {
-    GM_setValue('gh_extraInfo', !GM_getValue('gh_extraInfo'));
+    GM_setValue('gh_biliExtraInfo', !GM_getValue('gh_biliExtraInfo'));
+    alert('切换成功，即将刷新页面使之生效');
+    document.location.reload();
+  }
+
+  function switchBiliUseApi() {
+    GM_setValue('gh_biliUseApi', !GM_getValue('gh_biliUseApi'));
     alert('切换成功，即将刷新页面使之生效');
     document.location.reload();
   }
@@ -154,7 +166,8 @@
   GM_registerMenuCommand(`设定抢码间隔：${interval} 毫秒（点击修改）`, setTimeInterval);
   GM_registerMenuCommand(`${GM_getValue('gh_autoExpand') ? '✅' : '❌'}自动打开里程碑（点击切换）`, switchAutoExpand);
   GM_registerMenuCommand(`${GM_getValue('gh_pagePurify') ? '✅' : '❌'}页面净化（点击切换）`, switchPagePurify);
-  GM_registerMenuCommand(`${GM_getValue('gh_extraInfo') ? '✅' : '❌'}是否启用b站额外信息和主动开始按钮`, switchBiliExtraInfo);
+  GM_registerMenuCommand(`${GM_getValue('gh_biliExtraInfo') ? '✅' : '❌'}是否启用b站额外信息和主动开始按钮`, switchBiliExtraInfo);
+  GM_registerMenuCommand(`${GM_getValue('gh_biliUseApi') ? '✅' : '❌'}是否启用b站api抢码`, switchBiliUseApi);
   GM_registerMenuCommand(`${GM_getValue('gh_getNew') ? '✅' : '❌'}虎牙/斗鱼抢萌新任务,*抢里程碑时需关闭*（点击切换）`, switchGetNew);
   GM_registerMenuCommand(`虎牙/斗鱼抢第几个萌新任务：${GM_getValue('gh_getNewNum')}（点击修改）`, setGetNewNum);
 
@@ -185,34 +198,13 @@
     console.info(`【原神直播活动抢码助手】${msg}`);
   }
 
-  // 给b站网页添加一个显示进度的element
-  function addBiliInfoPanel() {
-    const noticeWarp = document.querySelector('.tool-wrap');
-    const infoPanel = document.createElement('div');
-    infoPanel.className = 'task-progress-tip';
-    infoPanel.innerHTML = (
-      `<div style="margin-bottom: 10px;">抢码开始时间：${GM_getValue('gh_start_time')}</div>
-      <div style="margin-bottom: 10px;">抢码间隔：${interval} 毫秒</div>
-      <div class="bili-status" style="margin-bottom: 10px;">当前状态：等待开始</div>`
-    );
-    noticeWarp.appendChild(infoPanel);
-  }
-
   function modifyBiliInfoPanel(status) {
+    if (!GM_getValue('gh_biliExtraInfo')) return;
     const infoPanel = document.querySelector('.bili-status');
     infoPanel.innerText = `当前状态：${status}`;
   }
 
   let manualStart = false;
-
-  function addManualStartButton() {
-    const noticeWarp = document.querySelector('.tool-wrap');
-    const manualStartButton = document.createElement('button');
-    manualStartButton.innerText = '手动开抢';
-    manualStartButton.className = 'button exchange-button'; // 直接用叔叔的样式
-    manualStartButton.onclick = () => { manualStart = true; };
-    noticeWarp.appendChild(manualStartButton);
-  }
 
   // 斗鱼和虎牙运行净化和自动打开里程碑，b站添加额外信息和手动开始按钮
   function runPurifyProcess() {
@@ -270,9 +262,23 @@
         }, 2000);
       }
     }
-    if (platform === 'B站' && GM_getValue('gh_extraInfo')) {
-      addBiliInfoPanel();
-      addManualStartButton();
+    if (platform === 'B站' && GM_getValue('gh_biliExtraInfo')) {
+      // 添加额外信息
+      const noticeWarp = document.querySelector('.tool-wrap');
+      const infoPanel = document.createElement('div');
+      infoPanel.className = 'task-progress-tip';
+      infoPanel.innerHTML = (
+        `<div style="margin-bottom: 10px;">抢码开始时间：${GM_getValue('gh_start_time')}</div>
+        <div style="margin-bottom: 10px;">抢码间隔：${interval} 毫秒</div>
+        <div class="bili-status" style="margin-bottom: 10px;">当前状态：等待开始</div>`
+      );
+      noticeWarp.appendChild(infoPanel);
+      // 添加手动开始按钮
+      const manualStartButton = document.createElement('button');
+      manualStartButton.innerText = '手动开抢';
+      manualStartButton.className = 'button exchange-button'; // 直接用叔叔的样式
+      manualStartButton.onclick = () => { manualStart = true; };
+      noticeWarp.appendChild(manualStartButton);
     }
   }
 
@@ -304,12 +310,132 @@
 
     log(`助手计划于${startHour}点${startMin}分${startSec}秒开始领取${platform}的第${level}个${rewardType}奖励（如有误请自行通过菜单修改配置）`);
 
+    function getBiliViaApi() {
+      // 获取receive_id
+      const csrfToken = getCookie('bili_jct');
+      const taskId1 = new URLSearchParams(window.location.href.split('?')[1]).get('task_id');
+      const params = new URLSearchParams({
+        csrf: csrfToken,
+        id: taskId1,
+      });
+      const receiveIdUrl = `https://api.bilibili.com/x/activity/mission/single_task?${params}`;
+      let actId;
+      let taskId;
+      let groupId;
+      let revieveId = 0;
+      let actName;
+      let taskName;
+      let rewardName;
+      const receiveIdTimer = setInterval(() => {
+        modifyBiliInfoPanel('正在获取receive_id');
+        fetch(receiveIdUrl, {
+          credentials: 'include',
+          headers: {
+            Accept: 'application/json, text/plain, */*',
+          },
+        })
+          .then((response) => {
+            if (response.status === 200) {
+              response.json().then((data) => {
+                if (data.code === 0 && data.data.task_info.receive_id !== 0) {
+                  clearInterval(receiveIdTimer);
+                  const taskInfo = data.data.task_info;
+                  const groupList = taskInfo.group_list[0];
+                  actId = groupList.act_id;
+                  taskId = groupList.task_id;
+                  groupId = groupList.group_id;
+                  revieveId = taskInfo.receive_id;
+                  actName = data.data.act_info.act_name;
+                  taskName = taskInfo.task_name;
+                  rewardName = taskInfo.reward_info.reward_name;
+                  modifyBiliInfoPanel('receive_id获取成功');
+                } else {
+                  modifyBiliInfoPanel('任务还未完成，等待重试');
+                }
+              });
+            }
+          });
+      }, 1000);
+      // 开始抢
+      const receiveUrl = 'https://api.bilibili.com/x/activity/mission/task/reward/receive';
+      const formData = new FormData();
+      let counter = 0;
+      const receiveTimer = setInterval(() => {
+        if (revieveId !== 0) {
+          if (!formData.has('csrf')) {
+            formData.set('csrf', csrfToken);
+            formData.set('act_id', actId);
+            formData.set('task_id', taskId);
+            formData.set('group_id', groupId);
+            formData.set('receive_id', revieveId);
+            formData.set('receive_from', 'missionPage');
+            formData.set('act_name', actName);
+            formData.set('task_name', taskName);
+            formData.set('reward_name', rewardName);
+          }
+          fetch(receiveUrl, {
+            credentials: 'include',
+            method: 'POST',
+            headers: {
+              Accept: 'application/json, text/plain, */*',
+            },
+            body: formData,
+          })
+            .then((response) => {
+              if (response.status === 200) {
+                response.json().then((data) => {
+                  let msg = '领取成功！';
+                  switch (data.code) {
+                    case 0:
+                      clearInterval(receiveTimer);
+                      try {
+                        msg += `兑换码为${data.data.extra.cdkey_content}`;
+                      } catch (e) {
+                        // 原神没有兑换码
+                      }
+                      alert(msg);
+                      break;
+                    // 感觉没必要先注释掉了
+                    // case 75153:
+                    //   // 星铁改成后续也只能半夜两点开始领了，这时候有receive_id然后跳这个
+                    //   clearInterval(receiveTimer);
+                    //   alert('不在奖品领取时间内，无法领取奖品~，是不是时间设置错了');
+                    //   break;
+                    case 202100:
+                      modifyBiliInfoPanel('有验证码，已自动暂停，');
+                      return;
+                    case 75154:
+                      clearInterval(receiveTimer);
+                      alert('来晚了，奖品已被领完~，明日再战');
+                      break;
+                    case 75255:
+                      clearInterval(receiveTimer);
+                      alert('库存已使用完，寄');
+                      break;
+                    case 75086:
+                      clearInterval(receiveTimer);
+                      alert('任务奖励已领取');
+                      break;
+                    default:
+                      // -702 -705 请求频率过高，请稍候重试
+                      counter += 1;
+                      modifyBiliInfoPanel(`领取失败${data.code}，已重试${counter}次`);
+                      break;
+                  }
+                });
+              }
+            });
+        }
+      }, interval);
+    }
+
     // 抢码实现
     function rob() {
       log('助手开始领取，如若出现数据异常为正常情况');
       let selector;
       switch (platform) {
         case 'B站':
+          selector = document.querySelector('.exchange-button');
           break;
         case '虎牙':
         {
@@ -356,121 +482,10 @@
         default:
           break;
       }
-      if (platform === 'B站') {
-        // 获取receive_id
-        const csrfToken = getCookie('bili_jct');
-        const taskId1 = new URLSearchParams(window.location.href.split('?')[1]).get('task_id');
-        const params = new URLSearchParams({
-          csrf: csrfToken,
-          id: taskId1,
-        });
-        const receiveIdUrl = `https://api.bilibili.com/x/activity/mission/single_task?${params}`;
-        let actId;
-        let taskId;
-        let groupId;
-        let revieveId = 0;
-        let actName;
-        let taskName;
-        let rewardName;
-        const receiveIdTimer = setInterval(() => {
-          modifyBiliInfoPanel('正在获取receive_id');
-          fetch(receiveIdUrl, {
-            credentials: 'include',
-            headers: {
-              Accept: 'application/json, text/plain, */*',
-            },
-          })
-            .then((response) => {
-              if (response.status === 200) {
-                response.json().then((data) => {
-                  if (data.code === 0 && data.data.task_info.receive_id !== 0) {
-                    clearInterval(receiveIdTimer);
-                    const taskInfo = data.data.task_info;
-                    const groupList = taskInfo.group_list[0];
-                    actId = groupList.act_id;
-                    taskId = groupList.task_id;
-                    groupId = groupList.group_id;
-                    revieveId = taskInfo.receive_id;
-                    actName = data.data.act_info.act_name;
-                    taskName = taskInfo.task_name;
-                    rewardName = taskInfo.reward_info.reward_name;
-                    modifyBiliInfoPanel('receive_id获取成功');
-                  } else {
-                    modifyBiliInfoPanel('任务还未完成，等待重试');
-                  }
-                });
-              }
-            });
-        }, 1000);
-        // 开始抢
-        const receiveUrl = 'https://api.bilibili.com/x/activity/mission/task/reward/receive';
-        const formData = new FormData();
-        let counter = 0;
-        const receiveTimer = setInterval(() => {
-          if (revieveId !== 0) {
-            if (!formData.has('csrf')) {
-              formData.set('csrf', csrfToken);
-              formData.set('act_id', actId);
-              formData.set('task_id', taskId);
-              formData.set('group_id', groupId);
-              formData.set('receive_id', revieveId);
-              formData.set('receive_from', 'missionPage');
-              formData.set('act_name', actName);
-              formData.set('task_name', taskName);
-              formData.set('reward_name', rewardName);
-            }
-            fetch(receiveUrl, {
-              credentials: 'include',
-              method: 'POST',
-              headers: {
-                Accept: 'application/json, text/plain, */*',
-              },
-              body: formData,
-            })
-              .then((response) => {
-                if (response.status === 200) {
-                  response.json().then((data) => {
-                    let msg = '领取成功！';
-                    switch (data.code) {
-                      case 0:
-                        clearInterval(receiveTimer);
-                        try {
-                          msg += `兑换码为${data.data.extra.cdkey_content}`;
-                        } catch (e) {
-                          // 原神没有兑换码
-                        }
-                        alert(msg);
-                        break;
-                      // 感觉没必要先注释掉了
-                      // case 75153:
-                      //   // 星铁改成后续也只能半夜两点开始领了，这时候有receive_id然后跳这个
-                      //   clearInterval(receiveTimer);
-                      //   alert('不在奖品领取时间内，无法领取奖品~，是不是时间设置错了');
-                      //   break;
-                      case 75154:
-                        clearInterval(receiveTimer);
-                        alert('来晚了，奖品已被领完~，明日再战');
-                        break;
-                      case 75255:
-                        clearInterval(receiveTimer);
-                        alert('库存已使用完，寄');
-                        break;
-                      case 75086:
-                        clearInterval(receiveTimer);
-                        alert('任务奖励已领取');
-                        break;
-                      default:
-                        // -702 -705 请求频率过高，请稍候重试
-                        counter += 1;
-                        modifyBiliInfoPanel(`领取失败${data.code}，已重试${counter}次`);
-                        break;
-                    }
-                  });
-                }
-              });
-          }
-        }, interval);
-      } else if (platform === '虎牙' && !getNew) {
+      if (platform === 'B站' && GM_getValue('gh_biliUseApi')) {
+        getBiliViaApi();
+      }
+      if (platform === '虎牙' && !getNew) {
         setInterval(() => {
           // 虎牙重新选取下避免出问题
           selector = document.querySelectorAll('.exp-award li button')[level - 1];
