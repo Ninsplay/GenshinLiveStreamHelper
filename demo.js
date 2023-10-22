@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      4.1.4+1.4.1
+// @version      4.1.5+1.4.2
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由Ninsplay修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -482,8 +482,33 @@
         default:
           break;
       }
-      if (platform === 'B站' && GM_getValue('gh_biliUseApi')) {
-        getBiliViaApi();
+      if (platform === 'B站') {
+        if (GM_getValue('gh_biliUseApi')) {
+          getBiliViaApi();
+        } else {
+          const csrfToken = getCookie('bili_jct');
+          const taskId = new URLSearchParams(window.location.href.split('?')[1]).get('task_id');
+          const params = new URLSearchParams({
+            csrf: csrfToken,
+            id: taskId,
+          });
+          const url = `https://api.bilibili.com/x/activity/mission/single_task?${params}`;
+          let revieveId = 0;
+          const timer = setInterval(() => {
+            fetch(url, {
+              credentials: 'include',
+              headers: {
+                Accept: 'application/json, text/plain, */*',
+              },
+            })
+              .then((response) => {
+                response.json().then((data) => {
+                  if (data.code === 0) revieveId = data.data.task_info.receive_id;
+                });
+              });
+            if (revieveId !== 0) clearInterval(timer);
+          }, 1000);
+        }
       }
       if (platform === '虎牙' && !getNew) {
         setInterval(() => {
