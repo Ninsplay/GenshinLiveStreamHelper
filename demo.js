@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      4.1.5+1.4.2
+// @version      4.1.5+1.4.3
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由Ninsplay修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -166,8 +166,8 @@
   GM_registerMenuCommand(`设定抢码间隔：${interval} 毫秒（点击修改）`, setTimeInterval);
   GM_registerMenuCommand(`${GM_getValue('gh_autoExpand') ? '✅' : '❌'}自动打开里程碑（点击切换）`, switchAutoExpand);
   GM_registerMenuCommand(`${GM_getValue('gh_pagePurify') ? '✅' : '❌'}页面净化（点击切换）`, switchPagePurify);
-  GM_registerMenuCommand(`${GM_getValue('gh_biliExtraInfo') ? '✅' : '❌'}是否启用b站额外信息和主动开始按钮`, switchBiliExtraInfo);
-  GM_registerMenuCommand(`${GM_getValue('gh_biliUseApi') ? '✅' : '❌'}是否启用b站api抢码`, switchBiliUseApi);
+  GM_registerMenuCommand(`${GM_getValue('gh_biliExtraInfo') ? '✅' : '❌'}启用b站额外信息和主动开始按钮（点击切换）`, switchBiliExtraInfo);
+  GM_registerMenuCommand(`${GM_getValue('gh_biliUseApi') ? '✅' : '❌'}启用b站api抢码，废弃，不要开启（点击切换）`, switchBiliUseApi);
   GM_registerMenuCommand(`${GM_getValue('gh_getNew') ? '✅' : '❌'}虎牙/斗鱼抢萌新任务,*抢里程碑时需关闭*（点击切换）`, switchGetNew);
   GM_registerMenuCommand(`虎牙/斗鱼抢第几个萌新任务：${GM_getValue('gh_getNewNum')}（点击修改）`, setGetNewNum);
 
@@ -402,7 +402,7 @@
                     //   alert('不在奖品领取时间内，无法领取奖品~，是不是时间设置错了');
                     //   break;
                     case 202100:
-                      modifyBiliInfoPanel('有验证码，已自动暂停，');
+                      modifyBiliInfoPanel('有验证码，改为点击按钮');
                       return;
                     case 75154:
                       clearInterval(receiveTimer);
@@ -517,6 +517,9 @@
           selector.click();
         }, interval);
       } else {
+        if (platform === 'B站') {
+          modifyBiliInfoPanel('开抢中');
+        }
         setInterval(() => {
           selector.click();
         }, interval);
