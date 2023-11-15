@@ -486,7 +486,7 @@
       if (platform === 'B站') {
         if (GM_getValue('gh_biliUseApi')) {
           getBiliViaApi();
-        } else {
+        } else if (game === '原神') {
           const csrfToken = getCookie('bili_jct');
           const taskId = new URLSearchParams(window.location.href.split('?')[1]).get('task_id');
           const params = new URLSearchParams({
