@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      4.2.0+1.5.2
+// @version      4.4.0+2.0.0
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由ionase修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -18,8 +18,8 @@
 // @grant        GM_getValue
 // @homepageURL  https://github.com/iona-s/GenshinLiveStreamHelper
 // @supportURL   https://github.com/iona-s/GenshinLiveStreamHelper/issues
-// @downloadURL  https://ghproxy.com/https://raw.githubusercontent.com/iona-s/GenshinLiveStreamHelper/main/demo.js
-// @updateURL    https://ghproxy.com/https://raw.githubusercontent.com/iona-s/GenshinLiveStreamHelper/main/demo.js
+// @downloadURL  https://mirror.ghproxy.com/https://raw.githubusercontent.com/iona-s/GenshinLiveStreamHelper/main/demo.js
+// @updateURL    https://mirror.ghproxy.com/https://raw.githubusercontent.com/iona-s/GenshinLiveStreamHelper/main/demo.js
 // @license      GPL-3.0 license
 // ==/UserScript==
 (function main() {
@@ -443,11 +443,19 @@
         {
           if (!getNew) {
             selector = document.querySelectorAll('.exp-award li button')[level - 1];
+            let expSelector;
+            if (game === '原神') {
+              expSelector = document.querySelector('li:last-child .task-exp+button');
+            } else {
+              expSelector = document.querySelector('li:first-child .task-exp+button');
+            }
             const timer = setInterval(() => {
-              // 铁道好像是first-child
-              document.querySelector('li:last-child .task-exp+button').click();
-              document.querySelector('.exp-award .reload').click();
-              if (document.querySelector('li:last-child .task-exp+button').innerText === '已领取') {
+              if (expSelector.innerText === '领取') {
+                expSelector.click();
+              } else {
+                document.querySelector('.exp-award .reload').click();
+              }
+              if (expSelector.innerText === '已领取') {
                 clearInterval(timer);
                 setTimeout(() => {
                   Array.from(document.querySelectorAll('.J_dcpConfirm')).forEach((e) => {
@@ -455,9 +463,11 @@
                   });
                 }, 1000);
               }
+              setTimeout(() => {}, Math.random() * 100);
             }, interval);
             break;
           }
+          // 萌新任务
           selector = document.querySelectorAll('.J_comp_27 .swiper-slide > div> div:nth-child(3)')[GM_getValue('gh_getNewNum') - 1];
           const timer = setInterval(() => {
             document.querySelector('.J_comp_27 .reload-item').click();
@@ -490,23 +500,25 @@
         } else {
           const csrfToken = getCookie('bili_jct');
           const taskId = new URLSearchParams(document.location.href.split('?')[1]).get('task_id');
-          let url;
-          if (game === '原神') {
-            const params = new URLSearchParams({
-              csrf: csrfToken,
-              id: taskId,
-            });
-            url = `https://api.bilibili.com/x/activity/mission/single_task?${params}`;
-          } else {
-            const params = new URLSearchParams({
-              csrf: csrfToken,
-              task_id: taskId,
-            });
-            url = `https://api.bilibili.com/x/activity_components/mission/info?${params}`;
-          }
+          // let url;
+          // if (game === '原神')
+          // {
+          const params = new URLSearchParams({
+            csrf: csrfToken,
+            id: taskId,
+          });
+          // url = `https://api.bilibili.com/x/activity/mission/single_task?${params}`;
+          // }
+          // else {
+          //   const params = new URLSearchParams({
+          //     csrf: csrfToken,
+          //     task_id: taskId,
+          //   });
+          //   url = `https://api.bilibili.com/x/activity_components/mission/info?${params}`;
+          // }
           // 用来刷新库存
           setInterval(() => {
-            fetch(url, {
+            fetch(`https://api.bilibili.com/x/activity/mission/single_task?${params}`, {
               credentials: 'include',
               headers: {
                 Accept: 'application/json, text/plain, */*',
