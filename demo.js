@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    https://github.com/ifeng0188
-// @version      4.4-2.0-2024.03.08-1
+// @version      4.4-2.0-2024.03.08-2
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由ionase修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -443,7 +443,7 @@
         {
           if (!getNew) {
             selector = document.querySelectorAll('.exp-award li button')[level - 1];
-            const expSelector = document.querySelector('div[title^="10经验值"]').querySelector('button');
+            const expSelector = document.querySelector('div[title^="10经验值"]');
             const timer = setInterval(() => {
               if (expSelector.innerText === '领取') {
                 expSelector.nextElementSibling.click();
