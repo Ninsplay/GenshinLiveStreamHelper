@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    GenshinLiveStreamHelper
-// @version      4.5-2.0-2024.03.18-1
+// @version      4.5-2.1-2024.03.31-0
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由ionase修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -41,9 +41,6 @@
   }
   if (!GM_getValue('gh_biliExtraInfo')) {
     GM_setValue('gh_biliExtraInfo', false);
-  }
-  if (!GM_getValue('gh_biliUseApi')) {
-    GM_setValue('gh_biliUseApi', false);
   }
   if (!GM_getValue('gh_getNew')) {
     GM_setValue('gh_getNew', false);
@@ -138,12 +135,6 @@
     document.location.reload();
   }
 
-  function switchBiliUseApi() {
-    GM_setValue('gh_biliUseApi', !GM_getValue('gh_biliUseApi'));
-    alert('切换成功，即将刷新页面使之生效');
-    document.location.reload();
-  }
-
   function switchGetNew() {
     GM_setValue('gh_getNew', !GM_getValue('gh_getNew'));
     alert('切换成功，即将刷新页面使之生效');
@@ -169,7 +160,6 @@
   GM_registerMenuCommand(`${GM_getValue('gh_autoExpand') ? '✅' : '❌'}自动打开里程碑（点击切换）`, switchAutoExpand);
   GM_registerMenuCommand(`${GM_getValue('gh_pagePurify') ? '✅' : '❌'}页面净化（点击切换）`, switchPagePurify);
   GM_registerMenuCommand(`${GM_getValue('gh_biliExtraInfo') ? '✅' : '❌'}启用b站额外信息和主动开始按钮（点击切换）`, switchBiliExtraInfo);
-  GM_registerMenuCommand(`${GM_getValue('gh_biliUseApi') ? '✅' : '❌'}启用b站api抢码，废弃，不要开启（点击切换）`, switchBiliUseApi);
   GM_registerMenuCommand(`${GM_getValue('gh_getNew') ? '✅' : '❌'}虎牙/斗鱼抢萌新任务,*抢里程碑时需关闭*（点击切换）`, switchGetNew);
   GM_registerMenuCommand(`虎牙/斗鱼抢第几个萌新任务：${GM_getValue('gh_getNewNum')}（点击修改）`, setGetNewNum);
 
@@ -200,10 +190,22 @@
     console.info(`【原神直播活动抢码助手】${msg}`);
   }
 
+  function modifyBiliInfoPanelTask(status) {
+    if (!GM_getValue('gh_biliExtraInfo')) return;
+    const infoPanel = document.querySelector('.bili-task');
+    infoPanel.innerText = status;
+  }
+
+  function modifyBiliInfoPanelStock(status) {
+    if (!GM_getValue('gh_biliExtraInfo')) return;
+    const infoPanel = document.querySelector('.bili-stock_remain');
+    infoPanel.innerText = status;
+  }
+
   function modifyBiliInfoPanel(status) {
     if (!GM_getValue('gh_biliExtraInfo')) return;
     const infoPanel = document.querySelector('.bili-status');
-    infoPanel.innerText = `当前状态：${status}`;
+    infoPanel.innerText = status;
   }
 
   let manualStart = false;
@@ -265,14 +267,31 @@
       }
     }
     if (platform === 'B站' && GM_getValue('gh_biliExtraInfo')) {
-      // 添加额外信息
       const noticeWarp = document.querySelector('.tool-wrap');
       const infoPanel = document.createElement('div');
+      // 添加额外信息
       infoPanel.className = 'task-progress-tip';
       infoPanel.innerHTML = (
         `<div style="margin-bottom: 10px;">抢码开始时间：${GM_getValue('gh_start_time')}</div>
         <div style="margin-bottom: 10px;">抢码间隔：${interval} 毫秒</div>
-        <div class="bili-status" style="margin-bottom: 10px;">当前状态：等待开始</div>`
+        <div style="margin-bottom: 10px;">
+          任务完成情况：
+          <span class="bili-task">
+          获取中
+          </spam>
+        </div>
+        <div style="margin-bottom: 10px;">
+          剩余库存：
+          <span class="bili-stock_remain">
+          获取中
+          </span>
+        </div>
+        <div style="margin-bottom: 10px;">
+          当前状态：
+          <span class="bili-status">
+          等待开始
+          </span>
+        </div>`
       );
       noticeWarp.appendChild(infoPanel);
       // 添加手动开始按钮
@@ -281,6 +300,34 @@
       manualStartButton.className = 'button exchange-button'; // 直接用叔叔的样式
       manualStartButton.onclick = () => { manualStart = true; };
       noticeWarp.appendChild(manualStartButton);
+      // 获取任务信息
+      const csrfToken = getCookie('bili_jct');
+      const taskId = new URLSearchParams(window.location.href.split('?')[1]).get('task_id');
+      const params = new URLSearchParams({
+        csrf: csrfToken,
+        id: taskId,
+      });
+      const receiveIdTimer = setInterval(() => {
+        fetch(`https://api.bilibili.com/x/activity/mission/single_task?${params}`, {
+          credentials: 'include',
+          headers: {
+            Accept: 'application/json, text/plain, */*',
+          },
+        }).then((response) => {
+          if (response.status === 200) {
+            response.json().then((data) => {
+              if (data.code !== 0) return;
+              const taskInfo = data.data.task_info;
+              const groupList = taskInfo.group_list[0];
+              const taskProgress = `${groupList.group_complete_num}/${groupList.group_base_num}`;
+              const remainStock = taskInfo.reward_period_stock_num;
+              modifyBiliInfoPanelTask(taskProgress);
+              modifyBiliInfoPanelStock(remainStock);
+              clearInterval(receiveIdTimer);
+            });
+          }
+        });
+      }, 1000);
     }
   }
 
@@ -311,125 +358,6 @@
     const rewardType = getNew ? '萌新任务' : '里程碑';
 
     log(`助手计划于${startHour}点${startMin}分${startSec}秒开始领取${platform}的第${level}个${rewardType}奖励（如有误请自行通过菜单修改配置）`);
-
-    function getBiliViaApi() {
-      // 获取receive_id
-      const csrfToken = getCookie('bili_jct');
-      const taskId1 = new URLSearchParams(window.location.href.split('?')[1]).get('task_id');
-      const params = new URLSearchParams({
-        csrf: csrfToken,
-        id: taskId1,
-      });
-      const receiveIdUrl = `https://api.bilibili.com/x/activity/mission/single_task?${params}`;
-      let actId;
-      let taskId;
-      let groupId;
-      let revieveId = 0;
-      let actName;
-      let taskName;
-      let rewardName;
-      const receiveIdTimer = setInterval(() => {
-        modifyBiliInfoPanel('正在获取receive_id');
-        fetch(receiveIdUrl, {
-          credentials: 'include',
-          headers: {
-            Accept: 'application/json, text/plain, */*',
-          },
-        })
-          .then((response) => {
-            if (response.status === 200) {
-              response.json().then((data) => {
-                if (data.code === 0 && data.data.task_info.receive_id !== 0) {
-                  clearInterval(receiveIdTimer);
-                  const taskInfo = data.data.task_info;
-                  const groupList = taskInfo.group_list[0];
-                  actId = groupList.act_id;
-                  taskId = groupList.task_id;
-                  groupId = groupList.group_id;
-                  revieveId = taskInfo.receive_id;
-                  actName = data.data.act_info.act_name;
-                  taskName = taskInfo.task_name;
-                  rewardName = taskInfo.reward_info.reward_name;
-                  modifyBiliInfoPanel('receive_id获取成功');
-                } else {
-                  modifyBiliInfoPanel('任务还未完成，等待重试');
-                }
-              });
-            }
-          });
-      }, 1000);
-      // 开始抢
-      const receiveUrl = 'https://api.bilibili.com/x/activity/mission/task/reward/receive';
-      const formData = new FormData();
-      let counter = 0;
-      const receiveTimer = setInterval(() => {
-        if (revieveId !== 0) {
-          if (!formData.has('csrf')) {
-            formData.set('csrf', csrfToken);
-            formData.set('act_id', actId);
-            formData.set('task_id', taskId);
-            formData.set('group_id', groupId);
-            formData.set('receive_id', revieveId);
-            formData.set('receive_from', 'missionPage');
-            formData.set('act_name', actName);
-            formData.set('task_name', taskName);
-            formData.set('reward_name', rewardName);
-          }
-          fetch(receiveUrl, {
-            credentials: 'include',
-            method: 'POST',
-            headers: {
-              Accept: 'application/json, text/plain, */*',
-            },
-            body: formData,
-          })
-            .then((response) => {
-              if (response.status === 200) {
-                response.json().then((data) => {
-                  let msg = '领取成功！';
-                  switch (data.code) {
-                    case 0:
-                      clearInterval(receiveTimer);
-                      try {
-                        msg += `兑换码为${data.data.extra.cdkey_content}`;
-                      } catch (e) {
-                        // 原神没有兑换码
-                      }
-                      alert(msg);
-                      break;
-                    // 感觉没必要先注释掉了
-                    // case 75153:
-                    //   // 星铁改成后续也只能半夜两点开始领了，这时候有receive_id然后跳这个
-                    //   clearInterval(receiveTimer);
-                    //   alert('不在奖品领取时间内，无法领取奖品~，是不是时间设置错了');
-                    //   break;
-                    case 202100:
-                      modifyBiliInfoPanel('有验证码，改为点击按钮');
-                      return;
-                    case 75154:
-                      clearInterval(receiveTimer);
-                      alert('来晚了，奖品已被领完~，明日再战');
-                      break;
-                    case 75255:
-                      clearInterval(receiveTimer);
-                      alert('库存已使用完，寄');
-                      break;
-                    case 75086:
-                      clearInterval(receiveTimer);
-                      alert('任务奖励已领取');
-                      break;
-                    default:
-                      // -702 -705 请求频率过高，请稍候重试
-                      counter += 1;
-                      modifyBiliInfoPanel(`领取失败${data.code}，已重试${counter}次`);
-                      break;
-                  }
-                });
-              }
-            });
-        }
-      }, interval);
-    }
 
     // 抢码实现
     function rob() {
@@ -485,49 +413,59 @@
         default:
           break;
       }
-      if (platform === 'B站') {
-        if (GM_getValue('gh_biliUseApi')) {
-          getBiliViaApi();
-        } else {
-          const csrfToken = getCookie('bili_jct');
-          const taskId = new URLSearchParams(document.location.href.split('?')[1]).get('task_id');
-          // let url;
-          // if (game === '原神')
-          // {
-          const params = new URLSearchParams({
-            csrf: csrfToken,
-            id: taskId,
-          });
-          // url = `https://api.bilibili.com/x/activity/mission/single_task?${params}`;
-          // }
-          // else {
-          //   const params = new URLSearchParams({
-          //     csrf: csrfToken,
-          //     task_id: taskId,
-          //   });
-          //   url = `https://api.bilibili.com/x/activity_components/mission/info?${params}`;
-          // }
-          // 用来刷新库存
-          setInterval(() => {
-            fetch(`https://api.bilibili.com/x/activity/mission/single_task?${params}`, {
-              credentials: 'include',
-              headers: {
-                Accept: 'application/json, text/plain, */*',
-              },
-            });
-          }, 1000);
-        }
-      }
       if (platform === '虎牙' && !getNew) {
         setInterval(() => {
           // 虎牙重新选取下避免出问题
           selector = document.querySelectorAll('.exp-award li button')[level - 1];
           selector.click();
         }, interval);
+      } else if (platform === 'B站') {
+        modifyBiliInfoPanel('开抢中');
+        const robTimer = setInterval(() => {
+          selector.click();
+        }, interval);
+        const csrfToken = getCookie('bili_jct');
+        const taskId = new URLSearchParams(window.location.href.split('?')[1]).get('task_id');
+        const params = new URLSearchParams({
+          csrf: csrfToken,
+          id: taskId,
+        });
+        const receiveIdTimer = setInterval(() => {
+          fetch(`https://api.bilibili.com/x/activity/mission/single_task?${params}`, {
+            credentials: 'include',
+            headers: {
+              Accept: 'application/json, text/plain, */*',
+            },
+          }).then((response) => {
+            if (response.status === 200) {
+              response.json().then((data) => {
+                if (data.code !== 0) return;
+                const taskInfo = data.data.task_info;
+                const groupList = taskInfo.group_list[0];
+                modifyBiliInfoPanelTask(`${groupList.group_complete_num}/${groupList.group_base_num}`);
+                const receiveStatus = taskInfo.receive_status;
+                const remainStock = taskInfo.reward_period_stock_num;
+                if (receiveStatus === 0) {
+                  modifyBiliInfoPanel('任务还未完成');
+                } else if (receiveStatus === 1) {
+                  modifyBiliInfoPanel('任务已完成，在抢了');
+                } else if (receiveStatus === 3) {
+                  clearInterval(receiveIdTimer);
+                  clearInterval(robTimer);
+                  modifyBiliInfoPanel('抢到了');
+                }
+                if (remainStock === 0) {
+                  clearInterval(receiveIdTimer);
+                  clearInterval(robTimer);
+                  modifyBiliInfoPanel('寄');
+                } else {
+                  modifyBiliInfoPanelStock(remainStock);
+                }
+              });
+            }
+          });
+        }, 1000);
       } else {
-        if (platform === 'B站') {
-          modifyBiliInfoPanel('开抢中');
-        }
         setInterval(() => {
           selector.click();
         }, interval);
