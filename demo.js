@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道直播活动抢码助手
 // @namespace    GenshinLiveStreamHelper
-// @version      4.5-2.1-2024.04.01-1
+// @version      4.5-2.1-2024.04.08-0
 // @description  一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能
 // @author       原作者ifeng0188 由ionase修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -430,6 +430,7 @@
           csrf: csrfToken,
           id: taskId,
         });
+        let remainStock = 0;
         const receiveIdTimer = setInterval(() => {
           fetch(`https://api.bilibili.com/x/activity/mission/single_task?${params}`, {
             credentials: 'include',
@@ -444,7 +445,6 @@
                 const groupList = taskInfo.group_list[0];
                 modifyBiliInfoPanelTask(`${groupList.group_complete_num}/${groupList.group_base_num}`);
                 const receiveStatus = taskInfo.receive_status;
-                const remainStock = taskInfo.reward_period_stock_num;
                 if (receiveStatus === 0) {
                   modifyBiliInfoPanel('任务还未完成');
                 } else if (receiveStatus === 1) {
@@ -454,15 +454,13 @@
                   clearInterval(robTimer);
                   modifyBiliInfoPanel('抢到了');
                 }
-                const date = new Date();
-                const minute = date.getMinutes();
-                if (remainStock === 0 && minute >= 1 && minute <= 58) {
+                if (taskInfo.reward_period_stock_num === 0 && remainStock !== 0) {
                   clearInterval(receiveIdTimer);
                   clearInterval(robTimer);
                   modifyBiliInfoPanel('寄');
-                } else {
-                  modifyBiliInfoPanelStock(remainStock);
                 }
+                remainStock = taskInfo.reward_period_stock_num;
+                modifyBiliInfoPanelStock(remainStock);
               });
             }
           });
