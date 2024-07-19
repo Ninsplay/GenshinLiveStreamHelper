@@ -1,7 +1,7 @@
 <h1 align="center">GenshinLiveStreamHelper</h1>
-<h6 align="center">一款用于原神/崩坏：星穹铁道直播活动的抢码助手，支持哔哩哔哩、虎牙、斗鱼多个平台的自动抢码，附带一些页面优化功能</h6>
+<h6 align="center">一款用于原神/崩坏：星穹铁道/绝区零b站直播活动的抢码助手</h6>
 <p align="center">
-    <a href="https://raw.fastgit.org/Ninsplay/GenshinLiveStreamHelper/main/LICENSE"><img src="https://img.shields.io/github/license/Ninsplay/GenshinLiveStreamHelper" alt="license"></a>
+    <a href="https://github.com/iona-s/GenshinLiveStreamHelper/blob/main/LICENSE"><img src="https://img.shields.io/github/license/iona-s/GenshinLiveStreamHelper" alt="license"></a>
 </p>
 
 > 本项目仅用于帮助部分个人用户获得参与感，并不保证能抢到
@@ -21,15 +21,7 @@
 
 ## 丨功能
 
-- 虎牙、斗鱼平台抢码页面加载完毕后，自动展开里程碑选项卡
-- 斗鱼平台抢码页面加载完毕后，移除直播画面，使页面更流畅
-- 三平台自动抢码
-
-## 丨支持平台
-
-- 哔哩哔哩
-- 虎牙
-- 斗鱼
+- b站原神/崩坏：星穹铁道/绝区零直播活动的抢码
 
 ## 丨其他
 
