@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道/绝区零b站直播活动抢码助手
 // @namespace    GenshinLiveStreamHelper
-// @version      4.8-2.3-1.0-2024.07.26-0
+// @version      4.8-2.3-1.0-2024.07.26-1
 // @description  一款用于原神/崩坏：星穹铁道/绝区零b站直播活动的抢码助手
 // @author       原作者ifeng0188 由ionase修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -100,6 +100,7 @@
   let taskName;
   let rewardName;
   let receiveId;
+  let taskIdReceive;
 
   // b站的一些api
   function getTaskInfo() {
@@ -151,7 +152,7 @@
         receive_from: 'missionPage',
         receive_id: receiveId,
         reward_name: rewardName,
-        task_id: taskId,
+        task_id: taskIdReceive,
         task_name: taskName,
       };
     }
@@ -194,22 +195,27 @@
   let manualStart = false;
 
   function checkCaptchaStatus() {
-    postReceive().then((response) => {
-      if (response.status === 200) {
-        response.json().then((data) => {
-          const statusCode = data.code;
-          if (statusCode === 202101) {
-            alert('当前账号行为异常，无法领奖');
-          } else if (statusCode === 202102) {
-            log('风控系统异常？不知道干什么的');
-          } else if (statusCode === 202100) {
-            modifyBiliInfoPanelCaptcha('需要过验证码');
-          } else {
-            modifyBiliInfoPanelCaptcha('好了');
+    const waitTimer = setInterval(() => {
+      if (!(activityId === undefined)) {
+        clearInterval(waitTimer);
+        postReceive().then((response) => {
+          if (response.status === 200) {
+            response.json().then((data) => {
+              const statusCode = data.code;
+              if (statusCode === 202101) {
+                alert('当前账号行为异常，无法领奖');
+              } else if (statusCode === 202102) {
+                log('风控系统异常？不知道干什么的');
+              } else if (statusCode === 202100) {
+                modifyBiliInfoPanelCaptcha('需要过验证码');
+              } else {
+                modifyBiliInfoPanelCaptcha('好了');
+              }
+            });
           }
         });
       }
-    });
+    }, 100);
   }
 
   function initData() {
@@ -249,6 +255,8 @@
             activityName = data.data.act_info.act_name;
             taskName = taskInfo.task_name;
             rewardName = taskInfo.reward_info.reward_name;
+            receiveId = taskInfo.receive_id;
+            taskIdReceive = taskInfo.id;
             clearInterval(receiveIdTimer);
           });
         }
