@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道/绝区零b站直播活动抢码助手
 // @namespace    GenshinLiveStreamHelper
-// @version      4.8-2.3-1.0-2024.07.26-1
+// @version      4.8-2.3-1.0-2024.07.27-0
 // @description  一款用于原神/崩坏：星穹铁道/绝区零b站直播活动的抢码助手
 // @author       原作者ifeng0188 由ionase修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -101,6 +101,8 @@
   let rewardName;
   let receiveId;
   let taskIdReceive;
+
+  const queryInterval = 3000;
 
   // b站的一些api
   function getTaskInfo() {
@@ -205,7 +207,7 @@
               if (statusCode === 202101) {
                 alert('当前账号行为异常，无法领奖');
               } else if (statusCode === 202102) {
-                log('风控系统异常？不知道干什么的');
+                log('风控系统异常');
               } else if (statusCode === 202100) {
                 modifyBiliInfoPanelCaptcha('需要过验证码');
               } else {
@@ -237,7 +239,7 @@
             });
           }
         });
-      }, 2000);
+      }, queryInterval);
       return;
     }
     const receiveIdTimer = setInterval(() => {
@@ -261,7 +263,7 @@
           });
         }
       });
-    }, 2000);
+    }, queryInterval);
   }
 
   // b站添加额外信息和手动开始按钮
@@ -314,7 +316,7 @@
       captchaDiv.appendChild(summonCaptchaButton);
       noticeWarp.appendChild(captchaDiv);
       const manualStartButton = document.createElement('button');
-      manualStartButton.innerText = '手动等待开抢';
+      manualStartButton.innerText = '手动开抢';
       manualStartButton.className = 'button exchange-button'; // 直接用叔叔的样式
       manualStartButton.onclick = () => { manualStart = true; };
       noticeWarp.appendChild(manualStartButton);
@@ -348,6 +350,7 @@
 
     // 抢码实现
     function rob() {
+      startRob();
       let remainStock = 0;
       const receiveIdTimer = setInterval(() => {
         if (game === '原神') {
@@ -362,7 +365,6 @@
                 if (statusCode === 7) {
                   modifyBiliInfoPanel('任务还未完成');
                 } else if (statusCode === 0) {
-                  startRob();
                   modifyBiliInfoPanel('任务已完成，在抢了');
                 } else if (statusCode === 6) {
                   clearInterval(receiveIdTimer);
@@ -408,7 +410,7 @@
             });
           }
         });
-      }, 1000);
+      }, queryInterval);
     }
     // 等待开抢
     const timer = setInterval(() => {
