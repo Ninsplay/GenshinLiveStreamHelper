@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道/绝区零b站直播活动抢码助手
 // @namespace    GenshinLiveStreamHelper
-// @version      4.8-2.3-1.0-2024.07.28-0
+// @version      4.8-2.4-1.0-2024.07.31-0
 // @description  一款用于原神/崩坏：星穹铁道/绝区零b站直播活动的抢码助手
 // @author       原作者ifeng0188 由ionase修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -28,6 +28,9 @@
   }
   if (!GM_getValue('gh_biliExtraInfo')) {
     GM_setValue('gh_biliExtraInfo', true);
+  }
+  if (!GM_getValue('gh_biliRefreshTaskInfo')) {
+    GM_setValue('gh_biliRefreshTaskInfo', false);
   }
 
   const game = (function getGame() {
@@ -65,10 +68,17 @@
     document.location.reload();
   }
 
+  function switchbiliRefreshTaskInfo() {
+    GM_setValue('gh_biliRefreshTaskInfo', !GM_getValue('gh_biliRefreshTaskInfo'));
+    alert('切换成功，即将刷新页面使之生效');
+    document.location.reload();
+  }
+
   // 注册菜单
   GM_registerMenuCommand(`设定抢码时间：${GM_getValue('gh_start_time')}（点击修改）`, setStartTime);
   GM_registerMenuCommand(`设定抢码间隔：${GM_getValue('gh_interval')} 毫秒（点击修改）`, setTimeInterval);
   GM_registerMenuCommand(`${GM_getValue('gh_biliExtraInfo') ? '✅' : '❌'}启用b站额外信息和主动开始按钮（点击切换）`, switchBiliExtraInfo);
+  GM_registerMenuCommand(`${GM_getValue('gh_biliRefreshTaskInfo') ? '✅' : '❌'}启用抢码时的状态刷新，有风控风险（点击切换）`, switchbiliRefreshTaskInfo);
 
   // 日志
   function log(msg) {
@@ -352,65 +362,71 @@
     function rob() {
       startRob();
       let remainStock = 0;
-      const receiveIdTimer = setInterval(() => {
-        if (game === '原神') {
-          getTaskInfo().then((response) => {
-            if (response.status === 200) {
-              response.json().then((data) => {
-                if (data.code !== 0) return;
-                const stockInfo = data.data.stock_info;
-                const Stock = `总：${stockInfo.total_stock}% 今日：${stockInfo.day_stock}%`;
-                modifyBiliInfoPanelStock(Stock);
-                const statusCode = data.data.status;
-                if (statusCode === 7) {
-                  modifyBiliInfoPanel('任务还未完成');
-                } else if (statusCode === 0) {
-                  modifyBiliInfoPanel('任务已完成，在抢了');
-                } else if (statusCode === 6) {
-                  clearInterval(receiveIdTimer);
-                  clearInterval(robTimer);
-                  modifyBiliInfoPanel('抢到了');
+      if (GM_getValue('gh_biliRefreshTaskInfo')) {
+        const receiveIdTimer = setInterval(() => {
+          if (game === '原神') {
+            getTaskInfo()
+              .then((response) => {
+                if (response.status === 200) {
+                  response.json()
+                    .then((data) => {
+                      if (data.code !== 0) return;
+                      const stockInfo = data.data.stock_info;
+                      const Stock = `总：${stockInfo.total_stock}% 今日：${stockInfo.day_stock}%`;
+                      modifyBiliInfoPanelStock(Stock);
+                      const statusCode = data.data.status;
+                      if (statusCode === 7) {
+                        modifyBiliInfoPanel('任务还未完成');
+                      } else if (statusCode === 0) {
+                        modifyBiliInfoPanel('任务已完成，在抢了');
+                      } else if (statusCode === 6) {
+                        clearInterval(receiveIdTimer);
+                        clearInterval(robTimer);
+                        modifyBiliInfoPanel('抢到了');
+                      }
+                      if (stockInfo.day_stock === 0 && remainStock !== 0) {
+                        clearInterval(receiveIdTimer);
+                        clearInterval(robTimer);
+                        modifyBiliInfoPanel('寄');
+                      }
+                      remainStock = stockInfo.day_stock;
+                    });
                 }
-                if (stockInfo.day_stock === 0 && remainStock !== 0) {
-                  clearInterval(receiveIdTimer);
-                  clearInterval(robTimer);
-                  modifyBiliInfoPanel('寄');
-                }
-                remainStock = stockInfo.day_stock;
               });
-            }
-          });
-          return;
-        }
-
-        getTaskInfo().then((response) => {
-          if (response.status === 200) {
-            response.json().then((data) => {
-              if (data.code !== 0) return;
-              const taskInfo = data.data.task_info;
-              const groupList = taskInfo.group_list[0];
-              modifyBiliInfoPanelTask(`${groupList.group_complete_num}/${groupList.group_base_num}`);
-              const receiveStatus = taskInfo.receive_status;
-              if (receiveStatus === 0) {
-                modifyBiliInfoPanel('任务还未完成');
-              } else if (receiveStatus === 1) {
-                modifyBiliInfoPanel('任务已完成，在抢了');
-              } else if (receiveStatus === 3) {
-                clearInterval(receiveIdTimer);
-                clearInterval(robTimer);
-                modifyBiliInfoPanel('抢到了');
-              }
-              if (taskInfo.reward_period_stock_num === 0 && remainStock !== 0) {
-                clearInterval(receiveIdTimer);
-                clearInterval(robTimer);
-                modifyBiliInfoPanel('寄');
-              }
-              remainStock = taskInfo.reward_period_stock_num;
-              modifyBiliInfoPanelStock(remainStock);
-            });
+            return;
           }
-        });
-      }, queryInterval);
+
+          getTaskInfo()
+            .then((response) => {
+              if (response.status === 200) {
+                response.json()
+                  .then((data) => {
+                    if (data.code !== 0) return;
+                    const taskInfo = data.data.task_info;
+                    const groupList = taskInfo.group_list[0];
+                    modifyBiliInfoPanelTask(`${groupList.group_complete_num}/${groupList.group_base_num}`);
+                    const receiveStatus = taskInfo.receive_status;
+                    if (receiveStatus === 0) {
+                      modifyBiliInfoPanel('任务还未完成');
+                    } else if (receiveStatus === 1) {
+                      modifyBiliInfoPanel('任务已完成，在抢了');
+                    } else if (receiveStatus === 3) {
+                      clearInterval(receiveIdTimer);
+                      clearInterval(robTimer);
+                      modifyBiliInfoPanel('抢到了');
+                    }
+                    if (taskInfo.reward_period_stock_num === 0 && remainStock !== 0) {
+                      clearInterval(receiveIdTimer);
+                      clearInterval(robTimer);
+                      modifyBiliInfoPanel('寄');
+                    }
+                    remainStock = taskInfo.reward_period_stock_num;
+                    modifyBiliInfoPanelStock(remainStock);
+                  });
+              }
+            });
+        }, queryInterval);
+      }
     }
     // 等待开抢
     const timer = setInterval(() => {
