@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道/绝区零b站直播活动抢码助手
 // @namespace    GenshinLiveStreamHelper
-// @version      4.8-2.4-1.0-2024.07.31-0
+// @version      4.8-2.4-1.0-2024.07.31-1
 // @description  一款用于原神/崩坏：星穹铁道/绝区零b站直播活动的抢码助手
 // @author       原作者ifeng0188 由ionase修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -33,9 +33,9 @@
     GM_setValue('gh_biliRefreshTaskInfo', false);
   }
 
-  const game = (function getGame() {
-    if (document.location.href.includes('new-award-exchange')) return '原神'; // 用于判断b站，目前原神用的new-award-exchange
-    return '';
+  const newApi = (function getGame() {
+    if (document.location.href.includes('new-award-exchange')) return true; // 用于判断b站，目前原神用的new-award-exchange
+    return false;
   }());
 
   function setStartTime() {
@@ -117,7 +117,7 @@
   // b站的一些api
   function getTaskInfo() {
     let url;
-    if (game === '原神') {
+    if (newApi) {
       const params = new URLSearchParams({
         task_id: taskId,
       });
@@ -141,7 +141,7 @@
   function postReceive() {
     let url;
     let data;
-    if (game === '原神') {
+    if (newApi) {
       url = 'https://api.bilibili.com/x/activity_components/mission/receive';
       data = {
         task_id: taskId,
@@ -231,7 +231,7 @@
   }
 
   function initData() {
-    if (game === '原神') {
+    if (newApi) {
       const receiveIdTimer = setInterval(() => {
         getTaskInfo().then((response) => {
           if (response.status === 200) {
@@ -364,7 +364,7 @@
       let remainStock = 0;
       if (GM_getValue('gh_biliRefreshTaskInfo')) {
         const receiveIdTimer = setInterval(() => {
-          if (game === '原神') {
+          if (newApi) {
             getTaskInfo()
               .then((response) => {
                 if (response.status === 200) {
