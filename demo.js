@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道/绝区零b站直播活动抢码助手
 // @namespace    GenshinLiveStreamHelper
-// @version      4.8-2.4-1.0-2024.07.31-1
+// @version      4.8-2.4-1.0-2024.08.02-0
 // @description  一款用于原神/崩坏：星穹铁道/绝区零b站直播活动的抢码助手
 // @author       原作者ifeng0188 由ionase修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -26,11 +26,11 @@
   if (!GM_getValue('gh_interval')) {
     GM_setValue('gh_interval', '1000');
   }
-  if (!GM_getValue('gh_biliExtraInfo')) {
-    GM_setValue('gh_biliExtraInfo', true);
+  if (!GM_getValue('gh_biliExtraButton')) {
+    GM_setValue('gh_biliExtraButton', true);
   }
-  if (!GM_getValue('gh_biliRefreshTaskInfo')) {
-    GM_setValue('gh_biliRefreshTaskInfo', false);
+  if (!GM_getValue('gh_biliExtraInfo')) {
+    GM_setValue('gh_biliExtraInfo', false);
   }
 
   const newApi = (function getGame() {
@@ -62,14 +62,14 @@
     }
   }
 
-  function switchBiliExtraInfo() {
-    GM_setValue('gh_biliExtraInfo', !GM_getValue('gh_biliExtraInfo'));
+  function biliExtraButton() {
+    GM_setValue('gh_biliExtraButton', !GM_getValue('gh_biliExtraButton'));
     alert('切换成功，即将刷新页面使之生效');
     document.location.reload();
   }
 
-  function switchbiliRefreshTaskInfo() {
-    GM_setValue('gh_biliRefreshTaskInfo', !GM_getValue('gh_biliRefreshTaskInfo'));
+  function biliExtraInfo() {
+    GM_setValue('gh_biliExtraInfo', !GM_getValue('gh_biliExtraInfo'));
     alert('切换成功，即将刷新页面使之生效');
     document.location.reload();
   }
@@ -77,8 +77,8 @@
   // 注册菜单
   GM_registerMenuCommand(`设定抢码时间：${GM_getValue('gh_start_time')}（点击修改）`, setStartTime);
   GM_registerMenuCommand(`设定抢码间隔：${GM_getValue('gh_interval')} 毫秒（点击修改）`, setTimeInterval);
-  GM_registerMenuCommand(`${GM_getValue('gh_biliExtraInfo') ? '✅' : '❌'}启用b站额外信息和主动开始按钮（点击切换）`, switchBiliExtraInfo);
-  GM_registerMenuCommand(`${GM_getValue('gh_biliRefreshTaskInfo') ? '✅' : '❌'}启用抢码时的状态刷新，有风控风险（点击切换）`, switchbiliRefreshTaskInfo);
+  GM_registerMenuCommand(`${GM_getValue('gh_biliExtraButton') ? '✅' : '❌'}启用主动开始按钮（点击切换）`, biliExtraButton);
+  GM_registerMenuCommand(`${GM_getValue('gh_biliExtraInfo') ? '✅' : '❌'}启用b站额外信息（点击切换）`, biliExtraInfo);
 
   // 日志
   function log(msg) {
@@ -181,25 +181,21 @@
   }
 
   function modifyBiliInfoPanelTask(status) {
-    if (!GM_getValue('gh_biliExtraInfo')) return;
     const infoPanel = document.querySelector('.bili-task');
     infoPanel.innerText = status;
   }
 
   function modifyBiliInfoPanelStock(status) {
-    if (!GM_getValue('gh_biliExtraInfo')) return;
     const infoPanel = document.querySelector('.bili-stock_remain');
     infoPanel.innerText = status;
   }
 
   function modifyBiliInfoPanel(status) {
-    if (!GM_getValue('gh_biliExtraInfo')) return;
     const infoPanel = document.querySelector('.bili-status');
     infoPanel.innerText = status;
   }
 
   function modifyBiliInfoPanelCaptcha(status) {
-    if (!GM_getValue('gh_biliExtraInfo')) return;
     const infoPanel = document.querySelector('.bili-captcha');
     infoPanel.innerText = status;
   }
@@ -276,17 +272,15 @@
     }, queryInterval);
   }
 
-  // b站添加额外信息和手动开始按钮
   function addExtras() {
+    const noticeWarp = document.querySelector('.tool-wrap');
+    const infoPanel = document.createElement('div');
+    infoPanel.className = 'task-progress-tip';
+    let baseInfo = `<div style="margin-bottom: 10px;">抢码开始时间：${GM_getValue('gh_start_time')}</div>
+        <div style="margin-bottom: 10px;">抢码间隔：${GM_getValue('gh_interval')} 毫秒</div>`;
+    infoPanel.innerHTML = baseInfo;
     if (GM_getValue('gh_biliExtraInfo')) {
-      const noticeWarp = document.querySelector('.tool-wrap');
-      const infoPanel = document.createElement('div');
-      // 添加额外信息
-      infoPanel.className = 'task-progress-tip';
-      infoPanel.innerHTML = (
-        `<div style="margin-bottom: 10px;">抢码开始时间：${GM_getValue('gh_start_time')}</div>
-        <div style="margin-bottom: 10px;">抢码间隔：${GM_getValue('gh_interval')} 毫秒</div>
-        <div style="margin-bottom: 10px;">
+      baseInfo += `<div style="margin-bottom: 10px;">
           任务完成情况：
           <span class="bili-task">
           获取中
@@ -309,28 +303,34 @@
           <span class="bili-status">
           等待开始
           </span>
-        </div>`
-      );
-      noticeWarp.appendChild(infoPanel);
-      // 添加便利性按钮
-      const captchaDiv = document.createElement('div');
-      const checkCaptchaButton = document.createElement('button');
-      checkCaptchaButton.innerText = '检查验证码状态';
-      checkCaptchaButton.className = 'button exchange-button'; // 直接用叔叔的样式
-      checkCaptchaButton.onclick = () => { checkCaptchaStatus(); };
-      captchaDiv.appendChild(checkCaptchaButton);
+        </div>`;
+    }
+    infoPanel.innerHTML = baseInfo;
+    noticeWarp.appendChild(infoPanel);
+
+    if (GM_getValue('gh_biliExtraButton')) {
+      if (GM_getValue('gh_biliExtraInfo')) {
+        const checkCaptchaButton = document.createElement('button');
+        checkCaptchaButton.innerText = '检查验证码状态';
+        checkCaptchaButton.className = 'button exchange-button'; // 直接用叔叔的样式
+        checkCaptchaButton.onclick = () => {
+          checkCaptchaStatus();
+        };
+        noticeWarp.appendChild(checkCaptchaButton);
+      }
       const summonCaptchaButton = document.createElement('button');
       summonCaptchaButton.innerText = '手动抢一次->召唤验证码';
       summonCaptchaButton.className = 'button exchange-button'; // 直接用叔叔的样式
       summonCaptchaButton.onclick = () => { document.querySelector('.exchange-button').click(); };
-      captchaDiv.appendChild(summonCaptchaButton);
-      noticeWarp.appendChild(captchaDiv);
+      noticeWarp.appendChild(summonCaptchaButton);
       const manualStartButton = document.createElement('button');
       manualStartButton.innerText = '手动开抢';
       manualStartButton.className = 'button exchange-button'; // 直接用叔叔的样式
       manualStartButton.onclick = () => { manualStart = true; };
       noticeWarp.appendChild(manualStartButton);
+    }
 
+    if (GM_getValue('gh_biliExtraInfo')) {
       initData();
       checkCaptchaStatus();
     }
@@ -362,7 +362,7 @@
     function rob() {
       startRob();
       let remainStock = 0;
-      if (GM_getValue('gh_biliRefreshTaskInfo')) {
+      if (GM_getValue('gh_biliExtraInfo')) {
         const receiveIdTimer = setInterval(() => {
           if (newApi) {
             getTaskInfo()
