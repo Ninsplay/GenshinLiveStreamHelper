@@ -278,7 +278,6 @@
     infoPanel.className = 'task-progress-tip';
     let baseInfo = `<div style="margin-bottom: 10px;">抢码开始时间：${GM_getValue('gh_start_time')}</div>
         <div style="margin-bottom: 10px;">抢码间隔：${GM_getValue('gh_interval')} 毫秒</div>`;
-    infoPanel.innerHTML = baseInfo;
     if (GM_getValue('gh_biliExtraInfo')) {
       baseInfo += `<div style="margin-bottom: 10px;">
           任务完成情况：
@@ -297,14 +296,14 @@
           <span class="bili-captcha">
           获取中
           </span>
-        </div>
-        <div style="margin-bottom: 10px;">
+        </div>`;
+    }
+    baseInfo += `<div style="margin-bottom: 10px;">
           当前状态：
           <span class="bili-status">
           等待开始
           </span>
         </div>`;
-    }
     infoPanel.innerHTML = baseInfo;
     noticeWarp.appendChild(infoPanel);
 
