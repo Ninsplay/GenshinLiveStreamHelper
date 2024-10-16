@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         原神/崩坏：星穹铁道/绝区零b站直播活动抢码助手
 // @namespace    GenshinLiveStreamHelper
-// @version      4.8-2.4-1.0-2024.08.05-0
+// @version      5.1-2.5-1.2-2024.10.16-0
 // @description  一款用于原神/崩坏：星穹铁道/绝区零b站直播活动的抢码助手
 // @author       原作者ifeng0188 由ionase修改
 // @match        *://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=*
@@ -19,7 +19,7 @@
 // @license      GPL-3.0 license
 // ==/UserScript==
 (function main() {
-  // 配置初始化
+  // region 配置和参数初始化
   if (!GM_getValue('gh_start_time')) {
     GM_setValue('gh_start_time', '00:59:40');
   }
@@ -37,7 +37,9 @@
     if (document.location.href.includes('new-award-exchange')) return true; // 用于判断b站，目前原神用的new-award-exchange
     return false;
   }());
+  // endregion
 
+  // region 脚本菜单相关
   function setStartTime() {
     const temp = prompt('请输入抢码时间，格式示例：01:59:59', GM_getValue('gh_start_time'));
     if (temp == null) return;
@@ -79,7 +81,9 @@
   GM_registerMenuCommand(`设定抢码间隔：${GM_getValue('gh_interval')} 毫秒（点击修改）`, setTimeInterval);
   GM_registerMenuCommand(`${GM_getValue('gh_biliExtraButton') ? '✅' : '❌'}启用主动开始按钮（点击切换）`, biliExtraButton);
   GM_registerMenuCommand(`${GM_getValue('gh_biliExtraInfo') ? '✅' : '❌'}启用b站额外信息（点击切换）`, biliExtraInfo);
+  // endregion
 
+  // region 杂项函数
   // 日志
   function log(msg) {
     console.info(`【b站直播活动抢码助手】${msg}`);
@@ -101,33 +105,104 @@
     }
     return '';
   }
+  // endregion
 
-  // 一些常用变量
+  // region 一些变量/常量
   const csrfToken = getCookie('bili_jct');
   const taskId = new URLSearchParams(window.location.href.split('?')[1]).get('task_id');
+  const webLocation = document.querySelector('meta[name="spm_prefix"]').content;
+  // eslint-disable-next-line
+  let img_key, sub_key;
   let activityId;
   let activityName;
   let taskName;
   let rewardName;
   let receiveId;
   let taskIdReceive;
+  let manualStart = false;
 
   const queryInterval = 3000;
+  // endregion
 
-  // b站的一些api
+  // region wbi签名
+  // source: https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/misc/sign/wbi.md#JavaScript
+  /* eslint-disable */
+  const mixinKeyEncTab = [
+    46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49,
+    33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24, 55, 40,
+    61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11,
+    36, 20, 34, 44, 52
+  ]
+  // source: https://stackoverflow.com/questions/14733374/how-to-generate-an-md5-hash-from-a-string-in-javascript-node-js
+
+  var md5 = function(d){var r = M(V(Y(X(d),8*d.length)));return r.toLowerCase()};function M(d){for(var _,m="0123456789ABCDEF",f="",r=0;r<d.length;r++)_=d.charCodeAt(r),f+=m.charAt(_>>>4&15)+m.charAt(15&_);return f}function X(d){for(var _=Array(d.length>>2),m=0;m<_.length;m++)_[m]=0;for(m=0;m<8*d.length;m+=8)_[m>>5]|=(255&d.charCodeAt(m/8))<<m%32;return _}function V(d){for(var _="",m=0;m<32*d.length;m+=8)_+=String.fromCharCode(d[m>>5]>>>m%32&255);return _}function Y(d,_){d[_>>5]|=128<<_%32,d[14+(_+64>>>9<<4)]=_;for(var m=1732584193,f=-271733879,r=-1732584194,i=271733878,n=0;n<d.length;n+=16){var h=m,t=f,g=r,e=i;f=md5_ii(f=md5_ii(f=md5_ii(f=md5_ii(f=md5_hh(f=md5_hh(f=md5_hh(f=md5_hh(f=md5_gg(f=md5_gg(f=md5_gg(f=md5_gg(f=md5_ff(f=md5_ff(f=md5_ff(f=md5_ff(f,r=md5_ff(r,i=md5_ff(i,m=md5_ff(m,f,r,i,d[n+0],7,-680876936),f,r,d[n+1],12,-389564586),m,f,d[n+2],17,606105819),i,m,d[n+3],22,-1044525330),r=md5_ff(r,i=md5_ff(i,m=md5_ff(m,f,r,i,d[n+4],7,-176418897),f,r,d[n+5],12,1200080426),m,f,d[n+6],17,-1473231341),i,m,d[n+7],22,-45705983),r=md5_ff(r,i=md5_ff(i,m=md5_ff(m,f,r,i,d[n+8],7,1770035416),f,r,d[n+9],12,-1958414417),m,f,d[n+10],17,-42063),i,m,d[n+11],22,-1990404162),r=md5_ff(r,i=md5_ff(i,m=md5_ff(m,f,r,i,d[n+12],7,1804603682),f,r,d[n+13],12,-40341101),m,f,d[n+14],17,-1502002290),i,m,d[n+15],22,1236535329),r=md5_gg(r,i=md5_gg(i,m=md5_gg(m,f,r,i,d[n+1],5,-165796510),f,r,d[n+6],9,-1069501632),m,f,d[n+11],14,643717713),i,m,d[n+0],20,-373897302),r=md5_gg(r,i=md5_gg(i,m=md5_gg(m,f,r,i,d[n+5],5,-701558691),f,r,d[n+10],9,38016083),m,f,d[n+15],14,-660478335),i,m,d[n+4],20,-405537848),r=md5_gg(r,i=md5_gg(i,m=md5_gg(m,f,r,i,d[n+9],5,568446438),f,r,d[n+14],9,-1019803690),m,f,d[n+3],14,-187363961),i,m,d[n+8],20,1163531501),r=md5_gg(r,i=md5_gg(i,m=md5_gg(m,f,r,i,d[n+13],5,-1444681467),f,r,d[n+2],9,-51403784),m,f,d[n+7],14,1735328473),i,m,d[n+12],20,-1926607734),r=md5_hh(r,i=md5_hh(i,m=md5_hh(m,f,r,i,d[n+5],4,-378558),f,r,d[n+8],11,-2022574463),m,f,d[n+11],16,1839030562),i,m,d[n+14],23,-35309556),r=md5_hh(r,i=md5_hh(i,m=md5_hh(m,f,r,i,d[n+1],4,-1530992060),f,r,d[n+4],11,1272893353),m,f,d[n+7],16,-155497632),i,m,d[n+10],23,-1094730640),r=md5_hh(r,i=md5_hh(i,m=md5_hh(m,f,r,i,d[n+13],4,681279174),f,r,d[n+0],11,-358537222),m,f,d[n+3],16,-722521979),i,m,d[n+6],23,76029189),r=md5_hh(r,i=md5_hh(i,m=md5_hh(m,f,r,i,d[n+9],4,-640364487),f,r,d[n+12],11,-421815835),m,f,d[n+15],16,530742520),i,m,d[n+2],23,-995338651),r=md5_ii(r,i=md5_ii(i,m=md5_ii(m,f,r,i,d[n+0],6,-198630844),f,r,d[n+7],10,1126891415),m,f,d[n+14],15,-1416354905),i,m,d[n+5],21,-57434055),r=md5_ii(r,i=md5_ii(i,m=md5_ii(m,f,r,i,d[n+12],6,1700485571),f,r,d[n+3],10,-1894986606),m,f,d[n+10],15,-1051523),i,m,d[n+1],21,-2054922799),r=md5_ii(r,i=md5_ii(i,m=md5_ii(m,f,r,i,d[n+8],6,1873313359),f,r,d[n+15],10,-30611744),m,f,d[n+6],15,-1560198380),i,m,d[n+13],21,1309151649),r=md5_ii(r,i=md5_ii(i,m=md5_ii(m,f,r,i,d[n+4],6,-145523070),f,r,d[n+11],10,-1120210379),m,f,d[n+2],15,718787259),i,m,d[n+9],21,-343485551),m=safe_add(m,h),f=safe_add(f,t),r=safe_add(r,g),i=safe_add(i,e)}return Array(m,f,r,i)}function md5_cmn(d,_,m,f,r,i){return safe_add(bit_rol(safe_add(safe_add(_,d),safe_add(f,i)),r),m)}function md5_ff(d,_,m,f,r,i,n){return md5_cmn(_&m|~_&f,d,_,r,i,n)}function md5_gg(d,_,m,f,r,i,n){return md5_cmn(_&f|m&~f,d,_,r,i,n)}function md5_hh(d,_,m,f,r,i,n){return md5_cmn(_^m^f,d,_,r,i,n)}function md5_ii(d,_,m,f,r,i,n){return md5_cmn(m^(_|~f),d,_,r,i,n)}function safe_add(d,_){var m=(65535&d)+(65535&_);return(d>>16)+(_>>16)+(m>>16)<<16|65535&m}function bit_rol(d,_){return d<<_|d>>>32-_}
+  // 对 imgKey 和 subKey 进行字符顺序打乱编码
+  const getMixinKey = (orig) => mixinKeyEncTab.map(n => orig[n]).join('').slice(0, 32)
+
+  // 获取最新的 img_key 和 sub_key
+  async function getWbiKeys() {
+    const res = await fetch('https://api.bilibili.com/x/web-interface/nav', {
+        credentials: 'include',
+    })
+    const { data: { wbi_img: { img_url, sub_url } } } = await res.json()
+
+    return {
+      img_key: img_url.slice(
+        img_url.lastIndexOf('/') + 1,
+        img_url.lastIndexOf('.')
+      ),
+      sub_key: sub_url.slice(
+        sub_url.lastIndexOf('/') + 1,
+        sub_url.lastIndexOf('.')
+      )
+    }
+  }
+
+  // 为请求参数进行 wbi 签名
+  function encWbi(params, returnObj = false) {
+    const mixin_key = getMixinKey(img_key + sub_key),
+      curr_time = Math.round(Date.now() / 1000),
+      chr_filter = /[!'()*]/g;
+
+    Object.assign(params, { wts: curr_time }) // 添加 wts 字段
+    // 按照 key 重排参数
+    const query = Object
+      .keys(params)
+      .sort()
+      .map(key => {
+        // 过滤 value 中的 "!'()*" 字符
+        const value = params[key].toString().replace(chr_filter, '')
+        return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+      })
+      .join('&')
+    const wbi_sign = md5(query + mixin_key) // 计算 w_rid
+    if (returnObj) {
+      Object.assign(params, { w_rid: wbi_sign }) // 添加 wts 字段
+      return params
+    }
+    return query + '&w_rid=' + wbi_sign
+  }
+  /* eslint-enable */
+  // endregion
+
+  // region b站的一些api
   function getTaskInfo() {
     let url;
     if (newApi) {
-      const params = new URLSearchParams({
+      const params = {
         task_id: taskId,
-      });
-      url = `https://api.bilibili.com/x/activity_components/mission/info?${params}`;
+        web_location: webLocation,
+      };
+      const query = encWbi(params);
+      url = `https://api.bilibili.com/x/activity_components/mission/info?${query}`;
     } else {
-      const params = new URLSearchParams({
+      const params = {
         csrf: csrfToken,
         id: taskId,
-      });
-      url = `https://api.bilibili.com/x/activity/mission/single_task?${params}`;
+        web_location: webLocation,
+      };
+      const query = encWbi(params);
+      url = `https://api.bilibili.com/x/activity/mission/single_task?${query}`;
     }
 
     return fetch(url, {
@@ -169,6 +244,8 @@
       };
     }
 
+    data = encWbi(data, true);
+
     return fetch(url, {
       method: 'POST',
       credentials: 'include',
@@ -179,7 +256,9 @@
       body: new URLSearchParams(data),
     });
   }
+  // endregion
 
+  // region 修改详细信息相关
   function modifyBiliInfoPanelTask(status) {
     const infoPanel = document.querySelector('.bili-task');
     infoPanel.innerText = status;
@@ -199,9 +278,9 @@
     const infoPanel = document.querySelector('.bili-captcha');
     infoPanel.innerText = status;
   }
+  // endregion
 
-  let manualStart = false;
-
+  // region 功能拆分
   function checkCaptchaStatus() {
     const waitTimer = setInterval(() => {
       if (!(activityId === undefined)) {
@@ -227,6 +306,12 @@
   }
 
   function initData() {
+    /* eslint-disable */
+    getWbiKeys().then(keys => {
+      img_key = keys.img_key
+      sub_key = keys.sub_key
+    });
+    /* eslint-enable */
     if (newApi) {
       const receiveIdTimer = setInterval(() => {
         getTaskInfo().then((response) => {
@@ -335,7 +420,7 @@
     }
   }
 
-  // 运行抢码进程
+  // 抢码进程
   function runRobProcess() {
     // 变量初始化
     const startTime = GM_getValue('gh_start_time').split(':');
@@ -436,6 +521,7 @@
       }
     }, 100);
   }
+  // endregion
 
   // Run
   log('助手开始运行');
